@@ -9,11 +9,12 @@ import { cn, formatMatchDate } from '@/lib/utils'
 import { TeamFlag } from '@/components/TeamFlag'
 import {
   Settings, Users, Trophy, Star, Save, CheckCircle,
-  Building2, Crown, Database
+  Building2, Crown, Database, Medal
 } from 'lucide-react'
+import { AWARDS, AWARD_PLAYERS } from '@/lib/data/awards'
 import type { Match, Team, Profile } from '@/lib/types'
 
-type AdminTab = 'phase' | 'results' | 'qualify' | 'users'
+type AdminTab = 'phase' | 'results' | 'qualify' | 'awards' | 'users'
 
 const PHASE_OPTIONS = [
   { value: 'registration',         label: 'Registro abierto',               desc: 'Sólo se pueden crear cuentas' },
@@ -165,10 +166,11 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
       {/* Tabs */}
       <div className="flex gap-1 p-1 bg-gray-900 rounded-lg w-fit flex-wrap">
         {[
-          { key: 'phase',   label: 'Fase', icon: Star },
-          { key: 'results', label: 'Resultados', icon: Trophy },
-          { key: 'qualify', label: 'Clasificaciones', icon: Crown },
-          { key: 'users',   label: 'Usuarios', icon: Users },
+          { key: 'phase',   label: 'Fase',            icon: Star },
+          { key: 'results', label: 'Resultados',       icon: Trophy },
+          { key: 'qualify', label: 'Clasificaciones',  icon: Crown },
+          { key: 'awards',  label: 'Premios',          icon: Medal },
+          { key: 'users',   label: 'Usuarios',         icon: Users },
         ].map(({ key, label, icon: Icon }) => (
           <button
             key={key}
@@ -465,6 +467,54 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ─── TAB: PREMIOS ─── */}
+      {tab === 'awards' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-white">Ganadores de premios individuales</h2>
+          </div>
+          <p className="text-xs text-gray-500">
+            Cuando se anuncie el ganador de cada premio, selecciónalo aquí. Los usuarios que lo hayan acertado recibirán 25 puntos automáticamente.
+          </p>
+          <div className="space-y-3">
+            {AWARDS.map((award) => (
+              <div key={award.type} className="glass rounded-xl p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-2xl">{award.emoji}</span>
+                  <div>
+                    <p className="font-bold text-white">{award.label}</p>
+                    <p className="text-xs text-gray-500">{award.description}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <select
+                    value={settings[award.settingKey] ?? ''}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, [award.settingKey]: e.target.value }))}
+                    className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
+                  >
+                    <option value="">— Sin ganador todavía —</option>
+                    {AWARD_PLAYERS.map((player) => (
+                      <option key={player.name} value={player.name}>
+                        {player.flag} {player.name} ({player.country})
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={saving}
+                    onClick={() => saveSettings({ [award.settingKey]: settings[award.settingKey] ?? '' })}
+                  >
+                    <Save size={12} />
+                    Guardar
+                  </Button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

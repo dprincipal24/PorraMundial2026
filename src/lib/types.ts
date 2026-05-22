@@ -86,6 +86,14 @@ export interface Profile {
   created_at: string
 }
 
+export interface AwardPrediction {
+  id: string
+  user_id: string
+  award_type: string
+  player_name: string
+  created_at: string
+}
+
 export interface UserScore {
   user_id: string
   name: string
@@ -93,6 +101,7 @@ export interface UserScore {
   match_points: number
   group_qualify_points: number
   knockout_points: number
+  award_points: number
   total_points: number
   position: number
 }

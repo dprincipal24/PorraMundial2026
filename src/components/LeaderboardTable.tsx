@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { Trophy, Medal } from 'lucide-react'
 import type { UserScore } from '@/lib/types'
@@ -14,16 +15,44 @@ function PositionIcon({ pos }: { pos: number }) {
   return <span className="text-gray-500 text-sm font-bold w-4 text-center">{pos}</span>
 }
 
+function Avatar({ avatarUrl, name }: { avatarUrl: string | null; name: string }) {
+  if (avatarUrl && (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://'))) {
+    return (
+      <Image
+        src={avatarUrl}
+        alt={name}
+        width={32}
+        height={32}
+        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+        unoptimized
+      />
+    )
+  }
+  if (avatarUrl && avatarUrl.length <= 4) {
+    return (
+      <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-lg flex-shrink-0">
+        {avatarUrl}
+      </div>
+    )
+  }
+  return (
+    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-sm font-black text-white flex-shrink-0">
+      {name.charAt(0).toUpperCase()}
+    </div>
+  )
+}
+
 export function LeaderboardTable({ scores, currentUserId }: LeaderboardTableProps) {
   return (
     <div className="rounded-xl border border-gray-800 overflow-hidden">
       {/* Header */}
-      <div className="grid grid-cols-[auto_1fr_repeat(4,auto)] gap-x-4 px-4 py-3 bg-gray-900 border-b border-gray-800 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+      <div className="grid grid-cols-[auto_1fr_repeat(5,auto)] gap-x-3 px-4 py-3 bg-gray-900 border-b border-gray-800 text-xs font-semibold text-gray-500 uppercase tracking-wider">
         <span className="w-8 text-center">#</span>
         <span>Participante</span>
         <span className="hidden sm:block text-right">Partidos</span>
         <span className="hidden sm:block text-right">Grupos</span>
         <span className="hidden sm:block text-right">Elim.</span>
+        <span className="hidden sm:block text-right text-amber-300">Premios</span>
         <span className="text-right text-amber-400">Total</span>
       </div>
 
@@ -35,7 +64,7 @@ export function LeaderboardTable({ scores, currentUserId }: LeaderboardTableProp
             <div
               key={score.user_id}
               className={cn(
-                'grid grid-cols-[auto_1fr_repeat(4,auto)] gap-x-4 px-4 py-3 items-center transition-colors',
+                'grid grid-cols-[auto_1fr_repeat(5,auto)] gap-x-3 px-4 py-3 items-center transition-colors',
                 isMe ? 'bg-amber-500/8 border-l-2 border-amber-500' : 'hover:bg-gray-800/30',
                 idx < 3 && !isMe && 'bg-gray-800/20',
               )}
@@ -44,10 +73,8 @@ export function LeaderboardTable({ scores, currentUserId }: LeaderboardTableProp
                 <PositionIcon pos={idx + 1} />
               </div>
 
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-sm font-black text-white flex-shrink-0">
-                  {score.name.charAt(0).toUpperCase()}
-                </div>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Avatar avatarUrl={score.avatar_url} name={score.name} />
                 <div className="min-w-0">
                   <p className={cn('text-sm font-semibold truncate', isMe ? 'text-amber-400' : 'text-white')}>
                     {score.name}
@@ -64,6 +91,9 @@ export function LeaderboardTable({ scores, currentUserId }: LeaderboardTableProp
               </span>
               <span className="hidden sm:block text-right text-sm text-gray-400">
                 {score.knockout_points}
+              </span>
+              <span className="hidden sm:block text-right text-sm text-amber-300/80">
+                {score.award_points ?? 0}
               </span>
               <span className={cn(
                 'text-right text-base font-black',

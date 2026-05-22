@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
-import { Trophy, BarChart2, Star, Settings, Menu, X, LogOut } from 'lucide-react'
+import { Trophy, BarChart2, Star, Settings, Menu, X, LogOut, Medal } from 'lucide-react'
 
 interface NavbarProps {
   isAdmin?: boolean
@@ -15,6 +15,7 @@ interface NavbarProps {
 const NAV_LINKS = [
   { href: '/predictions/groups',   label: 'Fase Grupos',   icon: Star },
   { href: '/predictions/knockout', label: 'Eliminatorias', icon: Trophy },
+  { href: '/predictions/awards',   label: 'Premios',       icon: Medal },
   { href: '/leaderboard',          label: 'Clasificación', icon: BarChart2 },
 ]
 
