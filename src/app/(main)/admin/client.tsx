@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn, formatMatchDate } from '@/lib/utils'
+import { TeamFlag } from '@/components/TeamFlag'
 import {
   Settings, Users, Trophy, Star, Save, CheckCircle,
   Building2, Crown, Database
@@ -297,41 +298,28 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
             {filteredMatches.map((match) => {
               const current = scores[match.id]
               const dateInfo = formatMatchDate(match.match_date)
+              const isLive = current?.status === 'live'
+              const isFinished = current?.status === 'finished'
               return (
-                <div key={match.id} className="glass rounded-xl p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                    {/* Match info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <span className="text-xl">{match.home_team?.flag ?? '🏳️'}</span>
-                          <span className="text-sm font-semibold text-white truncate">
-                            {match.home_team?.name ?? match.home_placeholder ?? '?'}
-                          </span>
-                        </div>
-                        <span className="text-gray-600 text-xs">vs</span>
-                        <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-                          <span className="text-sm font-semibold text-white truncate text-right">
-                            {match.away_team?.name ?? match.away_placeholder ?? '?'}
-                          </span>
-                          <span className="text-xl">{match.away_team?.flag ?? '🏳️'}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                        <span>{dateInfo.short}</span>
-                        {match.stadium && (
-                          <>
-                            <span>·</span>
-                            <Building2 size={10} />
-                            <span className="truncate">{match.stadium.name}</span>
-                          </>
-                        )}
-                        {match.group_name && <span>· Grupo {match.group_name}</span>}
-                      </div>
+                <div key={match.id} className={cn(
+                  'glass rounded-xl overflow-hidden border',
+                  isLive ? 'border-red-500/40' : isFinished ? 'border-gray-700' : 'border-gray-800',
+                )}>
+                  {/* Fila principal */}
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    {/* Equipo local */}
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {match.home_team?.iso
+                        ? <TeamFlag iso={match.home_team.iso} name={match.home_team.name} size={40} className="w-10 h-7 flex-shrink-0" />
+                        : <span className="text-2xl flex-shrink-0">{match.home_team?.flag ?? '🏳️'}</span>
+                      }
+                      <span className="text-sm font-semibold text-white truncate">
+                        {match.home_team?.name ?? match.home_placeholder ?? '?'}
+                      </span>
                     </div>
 
-                    {/* Score inputs + status */}
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* Inputs marcador */}
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
                       <input
                         type="number"
                         min={0}
@@ -341,9 +329,9 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
                           ...prev,
                           [match.id]: { ...prev[match.id], home: e.target.value }
                         }))}
-                        className="w-12 h-9 text-center font-bold bg-gray-800 border border-gray-700 rounded text-amber-400 focus:outline-none focus:border-amber-500 text-sm"
+                        className="w-12 h-10 text-center text-lg font-black bg-gray-800 border border-gray-700 rounded-lg text-amber-400 focus:outline-none focus:border-amber-500"
                       />
-                      <span className="text-gray-600">:</span>
+                      <span className="text-gray-500 font-bold">:</span>
                       <input
                         type="number"
                         min={0}
@@ -353,8 +341,36 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
                           ...prev,
                           [match.id]: { ...prev[match.id], away: e.target.value }
                         }))}
-                        className="w-12 h-9 text-center font-bold bg-gray-800 border border-gray-700 rounded text-amber-400 focus:outline-none focus:border-amber-500 text-sm"
+                        className="w-12 h-10 text-center text-lg font-black bg-gray-800 border border-gray-700 rounded-lg text-amber-400 focus:outline-none focus:border-amber-500"
                       />
+                    </div>
+
+                    {/* Equipo visitante */}
+                    <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                      <span className="text-sm font-semibold text-white truncate text-right">
+                        {match.away_team?.name ?? match.away_placeholder ?? '?'}
+                      </span>
+                      {match.away_team?.iso
+                        ? <TeamFlag iso={match.away_team.iso} name={match.away_team.name} size={40} className="w-10 h-7 flex-shrink-0" />
+                        : <span className="text-2xl flex-shrink-0">{match.away_team?.flag ?? '🏳️'}</span>
+                      }
+                    </div>
+                  </div>
+
+                  {/* Fila inferior: fecha + estado + guardar */}
+                  <div className="flex items-center justify-between px-4 pb-3 gap-2">
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <span>{dateInfo.short}</span>
+                      {match.group_name && <span>· Grupo {match.group_name}</span>}
+                      {match.stadium && (
+                        <>
+                          <span>·</span>
+                          <Building2 size={10} />
+                          <span className="truncate max-w-[120px]">{match.stadium.name}</span>
+                        </>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
                       <select
                         value={current?.status ?? match.status}
                         onChange={(e) => setScores((prev) => ({
@@ -374,6 +390,7 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
                         disabled={saving}
                       >
                         <Save size={12} />
+                        Guardar
                       </Button>
                     </div>
                   </div>
