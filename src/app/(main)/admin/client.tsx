@@ -435,7 +435,10 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
                     <tr key={team.id} className="hover:bg-gray-800/30 transition-colors">
                       <td className="py-2 px-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg">{team.flag}</span>
+                          {team.iso
+                            ? <TeamFlag iso={team.iso} name={team.name} size={40} className="w-10 h-7 flex-shrink-0" />
+                            : <span className="text-lg">{team.flag}</span>
+                          }
                           <div>
                             <p className="font-medium text-white text-xs">{team.name}</p>
                             <p className="text-gray-600 text-xs">Grupo {team.group}</p>
