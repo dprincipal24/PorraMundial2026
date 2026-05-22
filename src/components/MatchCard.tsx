@@ -14,14 +14,9 @@ interface MatchCardProps {
 
 function TeamDisplay({
   team,
-  score,
-  predScore,
   isHome,
 }: {
   team: { name: string; flag: string; iso?: string } | undefined
-  placeholder?: string
-  score: number | null
-  predScore?: number | null
   isHome: boolean
 }) {
   return (
@@ -30,30 +25,24 @@ function TeamDisplay({
         ? <TeamFlag iso={team.iso} name={team.name} size={48} className="w-12 h-8" />
         : <span className="text-4xl leading-none">🏳️</span>
       }
-      <span className="text-xs md:text-sm font-semibold text-gray-200 text-center leading-tight max-w-[80px]">
+      <span className="text-xs md:text-sm font-semibold text-gray-200 text-center leading-tight max-w-[80px] truncate w-full">
         {team?.name ?? '???'}
       </span>
-      {score !== null && (
-        <span className="text-2xl font-black text-white">{score}</span>
-      )}
-      {score === null && predScore !== undefined && predScore !== null && (
-        <span className="text-xl font-bold text-amber-400">{predScore}</span>
-      )}
     </div>
   )
 }
 
-export function MatchCard({ match, prediction, onPredictionChange, showResult, locked }: MatchCardProps) {
+export function MatchCard({ match, prediction, onPredictionChange, locked }: MatchCardProps) {
   const dateInfo = formatMatchDate(match.match_date)
   const isFinished = match.status === 'finished'
   const isLive = match.status === 'live'
-  const hasResult = isFinished && match.home_score !== null && match.away_score !== null
+  const hasResult = (isFinished || isLive) && match.home_score !== null && match.away_score !== null
 
   const resultColor = () => {
-    if (!hasResult || !prediction) return ''
+    if (!isFinished || match.home_score === null || match.away_score === null || !prediction) return ''
     if (match.home_score === prediction.home_score && match.away_score === prediction.away_score)
       return 'border-amber-500/50 bg-amber-500/5'
-    const a1x2 = match.home_score! > match.away_score! ? '1' : match.home_score === match.away_score ? 'X' : '2'
+    const a1x2 = match.home_score > match.away_score ? '1' : match.home_score === match.away_score ? 'X' : '2'
     const p1x2 = prediction.home_score > prediction.away_score ? '1' : prediction.home_score === prediction.away_score ? 'X' : '2'
     if (a1x2 === p1x2) return 'border-green-500/50 bg-green-500/5'
     return 'border-red-500/20'
@@ -81,12 +70,7 @@ export function MatchCard({ match, prediction, onPredictionChange, showResult, l
       {/* Equipos + marcador */}
       <div className="px-4 py-5">
         <div className="flex items-center gap-4">
-          <TeamDisplay
-            team={match.home_team}
-            score={showResult && isFinished ? match.home_score : null}
-            predScore={prediction?.home_score}
-            isHome={true}
-          />
+          <TeamDisplay team={match.home_team} isHome={true} />
 
           {/* Marcador central o inputs */}
           <div className="flex flex-col items-center gap-2 min-w-[80px]">
@@ -117,21 +101,43 @@ export function MatchCard({ match, prediction, onPredictionChange, showResult, l
                 />
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                {hasResult && showResult ? (
-                  <>
-                    <span className="text-3xl font-black text-white">{match.home_score}</span>
-                    <span className="text-gray-500 text-lg">:</span>
-                    <span className="text-3xl font-black text-white">{match.away_score}</span>
-                  </>
-                ) : prediction ? (
-                  <>
-                    <span className="text-2xl font-black text-amber-400">{prediction.home_score}</span>
-                    <span className="text-gray-500 text-lg">:</span>
-                    <span className="text-2xl font-black text-amber-400">{prediction.away_score}</span>
-                  </>
-                ) : (
-                  <span className="text-gray-600 text-sm text-center">Sin<br/>pronóstico</span>
+              <div className="flex flex-col items-center gap-2">
+                {/* Fila pronóstico */}
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-[10px] text-amber-400/70 uppercase tracking-wider font-semibold">Pronóstico</span>
+                  {prediction ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xl font-black text-amber-400">{prediction.home_score}</span>
+                      <span className="text-gray-500 text-sm">:</span>
+                      <span className="text-xl font-black text-amber-400">{prediction.away_score}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-lg font-bold text-gray-600">—</span>
+                      <span className="text-gray-700 text-sm">:</span>
+                      <span className="text-lg font-bold text-gray-600">—</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Fila resultado real (solo live o finalizado) */}
+                {(isLive || isFinished) && (
+                  <div className="flex flex-col items-center gap-0.5">
+                    <span className="text-[10px] text-gray-400/70 uppercase tracking-wider font-semibold">Resultado</span>
+                    {hasResult ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-2xl font-black text-white">{match.home_score}</span>
+                        <span className="text-gray-500 text-sm">:</span>
+                        <span className="text-2xl font-black text-white">{match.away_score}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-lg font-bold text-gray-500">—</span>
+                        <span className="text-gray-600 text-sm">:</span>
+                        <span className="text-lg font-bold text-gray-500">—</span>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -140,12 +146,7 @@ export function MatchCard({ match, prediction, onPredictionChange, showResult, l
             )}
           </div>
 
-          <TeamDisplay
-            team={match.away_team}
-            score={showResult && isFinished ? match.away_score : null}
-            predScore={prediction?.away_score}
-            isHome={false}
-          />
+          <TeamDisplay team={match.away_team} isHome={false} />
         </div>
       </div>
 

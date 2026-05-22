@@ -39,7 +39,17 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
 
   // Results state
   const [selectedPhase, setSelectedPhase] = useState<string>('groups')
-  const [scores, setScores] = useState<Record<number, { home: string; away: string; status: string }>>({})
+  const [scores, setScores] = useState<Record<number, { home: string; away: string; status: string }>>(() => {
+    const initial: Record<number, { home: string; away: string; status: string }> = {}
+    for (const match of matches) {
+      initial[match.id] = {
+        home: match.home_score?.toString() ?? '',
+        away: match.away_score?.toString() ?? '',
+        status: match.status,
+      }
+    }
+    return initial
+  })
   const [qualifyMap, setQualifyMap] = useState<Record<string, {
     qualified: boolean; r16: boolean; qf: boolean; sf: boolean; final: boolean; champion: boolean
   }>>(() => {
@@ -326,11 +336,10 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
                         type="number"
                         min={0}
                         max={20}
-                        placeholder={match.home_score?.toString() ?? '—'}
-                        defaultValue={match.home_score?.toString() ?? ''}
+                        value={current?.home ?? ''}
                         onChange={(e) => setScores((prev) => ({
                           ...prev,
-                          [match.id]: { ...prev[match.id], home: e.target.value, status: prev[match.id]?.status ?? 'finished' }
+                          [match.id]: { ...prev[match.id], home: e.target.value }
                         }))}
                         className="w-12 h-9 text-center font-bold bg-gray-800 border border-gray-700 rounded text-amber-400 focus:outline-none focus:border-amber-500 text-sm"
                       />
@@ -339,19 +348,18 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
                         type="number"
                         min={0}
                         max={20}
-                        placeholder={match.away_score?.toString() ?? '—'}
-                        defaultValue={match.away_score?.toString() ?? ''}
+                        value={current?.away ?? ''}
                         onChange={(e) => setScores((prev) => ({
                           ...prev,
-                          [match.id]: { ...prev[match.id], away: e.target.value, status: prev[match.id]?.status ?? 'finished' }
+                          [match.id]: { ...prev[match.id], away: e.target.value }
                         }))}
                         className="w-12 h-9 text-center font-bold bg-gray-800 border border-gray-700 rounded text-amber-400 focus:outline-none focus:border-amber-500 text-sm"
                       />
                       <select
-                        defaultValue={match.status}
+                        value={current?.status ?? match.status}
                         onChange={(e) => setScores((prev) => ({
                           ...prev,
-                          [match.id]: { ...prev[match.id], status: e.target.value, home: prev[match.id]?.home ?? '', away: prev[match.id]?.away ?? '' }
+                          [match.id]: { ...prev[match.id], status: e.target.value }
                         }))}
                         className="bg-gray-800 border border-gray-700 rounded text-xs text-gray-300 px-2 py-1.5 focus:outline-none focus:border-purple-500"
                       >
@@ -363,7 +371,7 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
                         size="sm"
                         variant="secondary"
                         onClick={() => saveMatchResult(match.id)}
-                        disabled={saving || !scores[match.id]}
+                        disabled={saving}
                       >
                         <Save size={12} />
                       </Button>
