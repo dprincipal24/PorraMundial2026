@@ -52,13 +52,17 @@ export function LeaderboardClient({ scores: initialScores, currentUserId, phase,
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
   const [savingAvatar, setSavingAvatar] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string>('')
+  const [urlInput, setUrlInput] = useState<string>('')
 
   const supabase = createClient()
   const myScore = scores.find((s) => s.user_id === currentUserId)
   const N = scores.length
 
   useEffect(() => {
-    if (myScore) setAvatarUrl(myScore.avatar_url ?? '')
+    if (myScore) {
+      setAvatarUrl(myScore.avatar_url ?? '')
+      if (myScore.avatar_url?.startsWith('http')) setUrlInput(myScore.avatar_url)
+    }
   }, [myScore])
 
   useEffect(() => {
@@ -214,15 +218,15 @@ export function LeaderboardClient({ scores: initialScores, currentUserId, phase,
             <input
               type="url"
               placeholder="O pega una URL de imagen..."
-              value={avatarUrl.startsWith('http') ? avatarUrl : ''}
-              onChange={(e) => setAvatarUrl(e.target.value)}
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
               className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 placeholder:text-gray-600"
             />
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => saveAvatar(avatarUrl)}
-              disabled={savingAvatar || !avatarUrl.startsWith('http')}
+              onClick={() => saveAvatar(urlInput)}
+              disabled={savingAvatar || !urlInput.startsWith('http')}
             >
               <Check size={14} />
               Usar URL
