@@ -347,38 +347,13 @@ export function GroupPredictionsClient({
       {/* ── TAB: PARTIDOS ── */}
       {activeTab === 'matches' && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Grupo {activeGroup}</h2>
-            <span className="text-xs text-gray-600">
-              {matches.filter((m) => m.group_name === activeGroup && activePredMap[m.id] !== undefined).length}/
-              {matches.filter((m) => m.group_name === activeGroup).length} completados
-            </span>
-          </div>
-          {groupMatches.map((match) => {
-            const pred = activePredMap[match.id]
-            return (
-              <MatchCard
-                key={match.id}
-                match={match}
-                prediction={
-                  pred
-                    ? { id: '', user_id: userId, match_id: match.id, home_score: pred.home, away_score: pred.away, created_at: '' }
-                    : undefined
-                }
-                onPredictionChange={isOpen && !viewingUser ? handlePredictionChange : undefined}
-                locked={!isOpen || !!viewingUser}
-                showResult={match.status === 'finished'}
-              />
-            )
-          })}
-
           {/* Simulated standings based on predictions */}
           {(() => {
             const standings = simulateGroupStandings(groupTeams, groupMatches, activePredMap)
             const predictedCount = groupMatches.filter(m => activePredMap[m.id] !== undefined).length
             if (predictedCount === 0) return null
             return (
-              <div className="glass rounded-xl overflow-hidden border border-gray-800 mt-2">
+              <div className="glass rounded-xl overflow-hidden border border-gray-800">
                 <div className="px-4 py-2.5 border-b border-gray-800 flex items-center justify-between">
                   <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
                     Clasificación simulada · Grupo {activeGroup}
@@ -447,6 +422,32 @@ export function GroupPredictionsClient({
               </div>
             )
           })()}
+
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Grupo {activeGroup}</h2>
+            <span className="text-xs text-gray-600">
+              {matches.filter((m) => m.group_name === activeGroup && activePredMap[m.id] !== undefined).length}/
+              {matches.filter((m) => m.group_name === activeGroup).length} completados
+            </span>
+          </div>
+          {groupMatches.map((match) => {
+            const pred = activePredMap[match.id]
+            return (
+              <MatchCard
+                key={match.id}
+                match={match}
+                prediction={
+                  pred
+                    ? { id: '', user_id: userId, match_id: match.id, home_score: pred.home, away_score: pred.away, created_at: '' }
+                    : undefined
+                }
+                onPredictionChange={isOpen && !viewingUser ? handlePredictionChange : undefined}
+                locked={!isOpen || !!viewingUser}
+                showResult={match.status === 'finished'}
+              />
+            )
+          })}
+
         </div>
       )}
 
