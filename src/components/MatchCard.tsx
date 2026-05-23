@@ -51,8 +51,8 @@ export function MatchCard({ match, prediction, onPredictionChange, locked }: Mat
 
   const resultColor = () => {
     if (points === null) return ''
-    if (points === 6) return 'border-green-500/50 bg-green-500/5'
-    if (points === 3) return 'border-amber-500/50 bg-amber-500/5'
+    if (points === 6) return 'border-yellow-400/60 bg-yellow-500/5'
+    if (points === 3) return 'border-green-500/50 bg-green-500/5'
     return 'border-red-500/20'
   }
 
@@ -72,14 +72,22 @@ export function MatchCard({ match, prediction, onPredictionChange, locked }: Mat
         </div>
         <div className="flex items-center gap-2">
           {points !== null && (
-            <span className={cn(
-              'text-xs font-black px-2 py-0.5 rounded-full',
-              points === 6 ? 'bg-green-500/20 text-green-400' :
-              points === 3 ? 'bg-amber-500/20 text-amber-400' :
-                             'bg-red-500/10 text-red-400',
-            )}>
-              {points === 0 ? '+0' : `+${points}`} pts
-            </span>
+            points === 6 ? (
+              <span
+                className="text-xs font-black px-2.5 py-0.5 rounded-full bg-gradient-to-r from-yellow-500/40 to-amber-400/30 text-yellow-300 ring-1 ring-yellow-400/50"
+                style={{ boxShadow: '0 0 10px rgba(234,179,8,0.4), 0 0 20px rgba(234,179,8,0.15)' }}
+              >
+                ✨ +6 pts
+              </span>
+            ) : points === 3 ? (
+              <span className="text-xs font-black px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
+                +3 pts
+              </span>
+            ) : (
+              <span className="text-xs font-black px-2 py-0.5 rounded-full bg-red-500/10 text-red-400">
+                +0 pts
+              </span>
+            )
           )}
           {isLive && <Badge variant="live">EN VIVO</Badge>}
           {isFinished && <Badge variant="gray">Finalizado</Badge>}
