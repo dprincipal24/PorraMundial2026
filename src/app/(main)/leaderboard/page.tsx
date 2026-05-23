@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { LeaderboardClient } from './client'
 
-export const revalidate = 30
+export const revalidate = 0
 
 export default async function LeaderboardPage() {
   const supabase = await createClient()

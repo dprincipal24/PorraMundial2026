@@ -40,9 +40,9 @@ export function MatchCard({ match, prediction, onPredictionChange, locked }: Mat
   // Only show inputs for scheduled matches that are not locked
   const showInputs = !locked && !!onPredictionChange && match.status === 'scheduled'
 
-  // Points earned for this match
+  // Points earned (or provisional if live)
   const points = (() => {
-    if (!isFinished || !prediction || match.home_score === null || match.away_score === null) return null
+    if ((!isFinished && !isLive) || !prediction || match.home_score === null || match.away_score === null) return null
     if (match.home_score === prediction.home_score && match.away_score === prediction.away_score) return 6
     const a = match.home_score > match.away_score ? '1' : match.home_score === match.away_score ? 'X' : '2'
     const p = prediction.home_score > prediction.away_score ? '1' : prediction.home_score === prediction.away_score ? 'X' : '2'
@@ -72,22 +72,25 @@ export function MatchCard({ match, prediction, onPredictionChange, locked }: Mat
         </div>
         <div className="flex items-center gap-2">
           {points !== null && (
-            points === 6 ? (
-              <span
-                className="text-xs font-black px-2.5 py-0.5 rounded-full bg-gradient-to-r from-yellow-500/40 to-amber-400/30 text-yellow-300 ring-1 ring-yellow-400/50"
-                style={{ boxShadow: '0 0 10px rgba(234,179,8,0.4), 0 0 20px rgba(234,179,8,0.15)' }}
-              >
-                ✨ +6 pts
-              </span>
-            ) : points === 3 ? (
-              <span className="text-xs font-black px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
-                +3 pts
-              </span>
-            ) : (
-              <span className="text-xs font-black px-2 py-0.5 rounded-full bg-red-500/10 text-red-400">
-                +0 pts
-              </span>
-            )
+            <span className="flex items-center gap-1">
+              {points === 6 ? (
+                <span
+                  className="text-xs font-black px-2.5 py-0.5 rounded-full bg-gradient-to-r from-yellow-500/40 to-amber-400/30 text-yellow-300 ring-1 ring-yellow-400/50"
+                  style={{ boxShadow: '0 0 10px rgba(234,179,8,0.4), 0 0 20px rgba(234,179,8,0.15)' }}
+                >
+                  ✨ +6 pts
+                </span>
+              ) : points === 3 ? (
+                <span className="text-xs font-black px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
+                  +3 pts
+                </span>
+              ) : (
+                <span className="text-xs font-black px-2 py-0.5 rounded-full bg-red-500/10 text-red-400">
+                  +0 pts
+                </span>
+              )}
+              {isLive && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" title="Provisional" />}
+            </span>
           )}
           {isLive && <Badge variant="live">EN VIVO</Badge>}
           {isFinished && <Badge variant="gray">Finalizado</Badge>}
