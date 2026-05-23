@@ -51,8 +51,8 @@ export function MatchCard({ match, prediction, onPredictionChange, locked }: Mat
 
   const resultColor = () => {
     if (points === null) return ''
-    if (points === 6) return 'border-amber-500/50 bg-amber-500/5'
-    if (points === 3) return 'border-green-500/50 bg-green-500/5'
+    if (points === 6) return 'border-green-500/50 bg-green-500/5'
+    if (points === 3) return 'border-amber-500/50 bg-amber-500/5'
     return 'border-red-500/20'
   }
 
@@ -74,8 +74,8 @@ export function MatchCard({ match, prediction, onPredictionChange, locked }: Mat
           {points !== null && (
             <span className={cn(
               'text-xs font-black px-2 py-0.5 rounded-full',
-              points === 6 ? 'bg-amber-500/20 text-amber-400' :
-              points === 3 ? 'bg-green-500/20 text-green-400' :
+              points === 6 ? 'bg-green-500/20 text-green-400' :
+              points === 3 ? 'bg-amber-500/20 text-amber-400' :
                              'bg-red-500/10 text-red-400',
             )}>
               {points === 0 ? '+0' : `+${points}`} pts
