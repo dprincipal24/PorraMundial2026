@@ -7,10 +7,95 @@ import { MatchCard } from '@/components/MatchCard'
 import { CountdownTimer } from '@/components/CountdownTimer'
 import { Button } from '@/components/ui/button'
 import { TeamFlag } from '@/components/TeamFlag'
-import { GROUPS, getTeamsByGroup } from '@/lib/data/teams'
+import { GROUPS } from '@/lib/data/teams'
 import { cn } from '@/lib/utils'
 import { Save, Lock, CheckCircle, Users, Star, AlertTriangle, ArrowLeft } from 'lucide-react'
 import type { Match, MatchPrediction, Team } from '@/lib/types'
+
+// ── FIFA 2026 group standings simulation ──────────────────────────────────────
+
+type TeamStats = {
+  teamId: string
+  points: number
+  played: number
+  won: number
+  drawn: number
+  lost: number
+  gf: number
+  ga: number
+  gd: number
+}
+
+function calcH2H(
+  teamId: string,
+  tiedIds: string[],
+  groupMatches: Match[],
+  predMap: Record<number, { home: number; away: number }>,
+): { points: number; gd: number; gf: number } {
+  let pts = 0, gf = 0, ga = 0
+  for (const m of groupMatches) {
+    const p = predMap[m.id]
+    if (!p || !m.home_team_id || !m.away_team_id) continue
+    if (!tiedIds.includes(m.home_team_id) || !tiedIds.includes(m.away_team_id)) continue
+    if (m.home_team_id === teamId) {
+      gf += p.home; ga += p.away
+      if (p.home > p.away) pts += 3; else if (p.home === p.away) pts += 1
+    } else if (m.away_team_id === teamId) {
+      gf += p.away; ga += p.home
+      if (p.away > p.home) pts += 3; else if (p.away === p.home) pts += 1
+    }
+  }
+  return { points: pts, gd: gf - ga, gf }
+}
+
+function simulateGroupStandings(
+  groupTeams: Team[],
+  groupMatches: Match[],
+  predMap: Record<number, { home: number; away: number }>,
+): TeamStats[] {
+  const s: Record<string, TeamStats> = {}
+  for (const t of groupTeams) s[t.id] = { teamId: t.id, points: 0, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0 }
+
+  for (const m of groupMatches) {
+    const p = predMap[m.id]
+    if (!p || !m.home_team_id || !m.away_team_id) continue
+    const hs = s[m.home_team_id], as_ = s[m.away_team_id]
+    if (!hs || !as_) continue
+    const h = p.home, a = p.away
+    hs.played++; as_.played++
+    hs.gf += h; hs.ga += a; hs.gd = hs.gf - hs.ga
+    as_.gf += a; as_.ga += h; as_.gd = as_.gf - as_.ga
+    if (h > a)      { hs.won++;   hs.points += 3; as_.lost++ }
+    else if (h < a) { as_.won++;  as_.points += 3; hs.lost++ }
+    else            { hs.drawn++; hs.points++;     as_.drawn++; as_.points++ }
+  }
+
+  const all = Object.values(s).sort((a, b) => b.points - a.points)
+
+  // Break ties with FIFA tiebreakers: H2H pts → H2H GD → H2H GF → overall GD → overall GF
+  const result: TeamStats[] = []
+  let i = 0
+  while (i < all.length) {
+    let j = i + 1
+    while (j < all.length && all[j].points === all[i].points) j++
+    const tied = all.slice(i, j)
+    if (tied.length > 1) {
+      const ids = tied.map(t => t.teamId)
+      tied.sort((a, b) => {
+        const ha = calcH2H(a.teamId, ids, groupMatches, predMap)
+        const hb = calcH2H(b.teamId, ids, groupMatches, predMap)
+        if (hb.points !== ha.points) return hb.points - ha.points
+        if (hb.gd !== ha.gd) return hb.gd - ha.gd
+        if (hb.gf !== ha.gf) return hb.gf - ha.gf
+        if (b.gd !== a.gd) return b.gd - a.gd
+        return b.gf - a.gf
+      })
+    }
+    result.push(...tied)
+    i = j
+  }
+  return result
+}
 
 type AllUserPred = {
   profile: { id: string; name: string; avatar_url: string | null }
@@ -284,6 +369,82 @@ export function GroupPredictionsClient({
               />
             )
           })}
+
+          {/* Simulated standings based on predictions */}
+          {(() => {
+            const standings = simulateGroupStandings(groupTeams, groupMatches, activePredMap)
+            const predictedCount = groupMatches.filter(m => activePredMap[m.id] !== undefined).length
+            if (predictedCount === 0) return null
+            return (
+              <div className="glass rounded-xl overflow-hidden border border-gray-800 mt-2">
+                <div className="px-4 py-2.5 border-b border-gray-800 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Clasificación simulada · Grupo {activeGroup}
+                  </span>
+                  <span className="text-xs text-gray-600">{predictedCount}/{groupMatches.length} partidos</span>
+                </div>
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-gray-800/60">
+                      <th className="text-left py-2 pl-4 pr-2 text-gray-600 font-semibold w-6">#</th>
+                      <th className="text-left py-2 px-2 text-gray-600 font-semibold">Equipo</th>
+                      <th className="text-center py-2 px-1.5 text-gray-600 font-semibold">PJ</th>
+                      <th className="text-center py-2 px-1.5 text-gray-600 font-semibold">G</th>
+                      <th className="text-center py-2 px-1.5 text-gray-600 font-semibold">E</th>
+                      <th className="text-center py-2 px-1.5 text-gray-600 font-semibold">P</th>
+                      <th className="text-center py-2 px-1.5 text-gray-600 font-semibold">GF</th>
+                      <th className="text-center py-2 px-1.5 text-gray-600 font-semibold">GC</th>
+                      <th className="text-center py-2 px-1.5 text-gray-600 font-semibold">DG</th>
+                      <th className="text-center py-2 pl-1.5 pr-4 text-gray-600 font-semibold">Pts</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800/40">
+                    {standings.map((row, idx) => {
+                      const team = groupTeams.find(t => t.id === row.teamId)
+                      if (!team) return null
+                      const qualifies = idx < 2
+                      return (
+                        <tr key={row.teamId} className={cn(qualifies ? 'bg-green-500/5' : '')}>
+                          <td className="py-2 pl-4 pr-2">
+                            <span className={cn(
+                              'w-5 h-5 rounded-full flex items-center justify-center font-bold text-xs',
+                              qualifies ? 'bg-green-500/20 text-green-400' : 'text-gray-600',
+                            )}>
+                              {idx + 1}
+                            </span>
+                          </td>
+                          <td className="py-2 px-2">
+                            <div className="flex items-center gap-1.5">
+                              <TeamFlag iso={team.iso} name={team.name} size={20} className="w-5 h-3.5 shrink-0" />
+                              <span className={cn('font-medium truncate max-w-[80px]', qualifies ? 'text-white' : 'text-gray-400')}>
+                                {team.name}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="text-center py-2 px-1.5 text-gray-400">{row.played}</td>
+                          <td className="text-center py-2 px-1.5 text-gray-400">{row.won}</td>
+                          <td className="text-center py-2 px-1.5 text-gray-400">{row.drawn}</td>
+                          <td className="text-center py-2 px-1.5 text-gray-400">{row.lost}</td>
+                          <td className="text-center py-2 px-1.5 text-gray-400">{row.gf}</td>
+                          <td className="text-center py-2 px-1.5 text-gray-400">{row.ga}</td>
+                          <td className={cn('text-center py-2 px-1.5 font-medium', row.gd > 0 ? 'text-green-400' : row.gd < 0 ? 'text-red-400' : 'text-gray-400')}>
+                            {row.gd > 0 ? `+${row.gd}` : row.gd}
+                          </td>
+                          <td className={cn('text-center py-2 pl-1.5 pr-4 font-bold', qualifies ? 'text-amber-400' : 'text-gray-300')}>
+                            {row.points}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+                <div className="px-4 py-2 border-t border-gray-800/60 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-green-500/50 inline-block"></span>
+                  <span className="text-xs text-gray-600">Clasifican a eliminatorias</span>
+                </div>
+              </div>
+            )
+          })()}
         </div>
       )}
 

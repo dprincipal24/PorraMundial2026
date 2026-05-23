@@ -11,7 +11,8 @@ import {
   Settings, Users, Trophy, Star, Save, CheckCircle,
   Building2, Crown, Database, Medal
 } from 'lucide-react'
-import { AWARDS, AWARD_PLAYERS } from '@/lib/data/awards'
+import { AWARDS, PLAYERS_BY_AWARD, type AwardType } from '@/lib/data/awards'
+import { PlayerSelect } from '@/components/PlayerSelect'
 import type { Match, Team, Profile } from '@/lib/types'
 
 type AdminTab = 'phase' | 'results' | 'qualify' | 'awards' | 'users'
@@ -491,18 +492,14 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <select
-                    value={settings[award.settingKey] ?? ''}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, [award.settingKey]: e.target.value }))}
-                    className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
-                  >
-                    <option value="">— Sin ganador todavía —</option>
-                    {AWARD_PLAYERS.map((player) => (
-                      <option key={player.name} value={player.name}>
-                        {player.flag} {player.name} ({player.country})
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex-1">
+                    <PlayerSelect
+                      players={PLAYERS_BY_AWARD[award.type as AwardType]}
+                      value={settings[award.settingKey] ?? ''}
+                      onChange={(name) => setSettings(prev => ({ ...prev, [award.settingKey]: name }))}
+                      placeholder="— Sin ganador todavía —"
+                    />
+                  </div>
                   <Button
                     size="sm"
                     variant="secondary"

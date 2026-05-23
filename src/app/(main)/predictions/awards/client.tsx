@@ -4,8 +4,10 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { TeamFlag } from '@/components/TeamFlag'
+import { PlayerSelect } from '@/components/PlayerSelect'
 import { cn } from '@/lib/utils'
-import { AWARDS, AWARD_PLAYERS, type AwardType } from '@/lib/data/awards'
+import { AWARDS, PLAYERS_BY_AWARD, type AwardType } from '@/lib/data/awards'
 import { Save, Lock, CheckCircle, XCircle, Medal, AlertTriangle, Users } from 'lucide-react'
 
 type AllUserPred = {
@@ -71,7 +73,7 @@ export function AwardPredictionsClient({
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (e) {
-      setError('Error al guardar. Inténtalo de nuevo.')
+      setError(`Error al guardar: ${(e as Error).message}`)
       console.error(e)
     } finally {
       setSaving(false)
@@ -143,6 +145,8 @@ export function AwardPredictionsClient({
             const winner = winners[award.settingKey]
             const isCorrect = winner && myPick === winner
             const isWrong = winner && myPick && myPick !== winner
+            const players = PLAYERS_BY_AWARD[award.type as AwardType]
+            const winnerPlayer = winner ? players.find(p => p.name === winner) : null
 
             return (
               <div
@@ -175,35 +179,29 @@ export function AwardPredictionsClient({
                 </div>
 
                 {winner && (
-                  <div className="mb-3 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm">
-                    <span className="text-gray-400">Ganador real: </span>
-                    <span className="text-white font-bold">
-                      {AWARD_PLAYERS.find(p => p.name === winner)?.flag} {winner}
-                    </span>
+                  <div className="mb-3 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm flex items-center gap-2 flex-wrap">
+                    <span className="text-gray-400">Ganador real:</span>
+                    {winnerPlayer && <TeamFlag iso={winnerPlayer.iso} name={winnerPlayer.country} size={20} className="w-5 h-3.5" />}
+                    <span className="text-white font-bold">{winner}</span>
                   </div>
                 )}
 
                 {isOpen ? (
-                  <select
+                  <PlayerSelect
+                    players={players}
                     value={myPick}
-                    onChange={(e) => setPredMap(prev => ({ ...prev, [award.type as AwardType]: e.target.value }))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
-                  >
-                    <option value="">— Elige un jugador —</option>
-                    {AWARD_PLAYERS.map((player) => (
-                      <option key={player.name} value={player.name}>
-                        {player.flag} {player.name} ({player.country})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(name) => setPredMap(prev => ({ ...prev, [award.type as AwardType]: name }))}
+                  />
                 ) : (
-                  <div className="px-3 py-2.5 bg-gray-800/50 rounded-lg text-sm">
-                    {myPick
-                      ? <span className="text-amber-400 font-semibold">
-                          {AWARD_PLAYERS.find(p => p.name === myPick)?.flag} {myPick}
-                        </span>
-                      : <span className="text-gray-600">Sin pronóstico</span>
-                    }
+                  <div className="px-3 py-2.5 bg-gray-800/50 rounded-lg text-sm flex items-center gap-2">
+                    {myPick ? (
+                      <>
+                        {(() => { const p = players.find(pl => pl.name === myPick); return p ? <TeamFlag iso={p.iso} name={p.country} size={20} className="w-5 h-3.5" /> : null })()}
+                        <span className="text-amber-400 font-semibold">{myPick}</span>
+                      </>
+                    ) : (
+                      <span className="text-gray-600">Sin pronóstico</span>
+                    )}
                   </div>
                 )}
               </div>
@@ -219,7 +217,6 @@ export function AwardPredictionsClient({
             {isOpen && isAdmin ? 'Vista admin — pronósticos en tiempo real' : 'Plazo cerrado — predicciones visibles'}
           </p>
 
-          {/* Table header */}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -251,16 +248,18 @@ export function AwardPredictionsClient({
                         const winner = winners[award.settingKey]
                         const correct = winner && pick === winner
                         const wrong = winner && pick && pick !== winner
+                        const pickPlayer = pick ? PLAYERS_BY_AWARD[award.type as AwardType].find(p => p.name === pick) : null
                         return (
                           <td key={award.type} className="text-center py-2.5 px-2">
                             {pick ? (
                               <span className={cn(
-                                'text-xs font-medium px-1.5 py-0.5 rounded',
+                                'text-xs font-medium px-1.5 py-0.5 rounded inline-flex items-center gap-1',
                                 correct ? 'text-green-400 bg-green-500/10' :
                                 wrong   ? 'text-red-400 bg-red-500/10' :
                                           'text-amber-300 bg-amber-500/10',
                               )}>
-                                {AWARD_PLAYERS.find(p => p.name === pick)?.flag} {pick.split(' ')[0]}
+                                {pickPlayer && <TeamFlag iso={pickPlayer.iso} name={pickPlayer.country} size={16} className="w-4 h-2.5 shrink-0" />}
+                                {pick.split(' ')[0]}
                               </span>
                             ) : (
                               <span className="text-gray-700 text-xs">—</span>
