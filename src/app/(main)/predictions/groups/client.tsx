@@ -165,8 +165,14 @@ export function GroupPredictionsClient({
   const groupMatches = matches.filter((m) => m.group_name === activeGroup)
   const groupTeams = teams.filter((t) => t.group === activeGroup)
 
+  const MAX_THIRD_PLACE = 8
+
   const groupQualifyCount = (group: string) =>
     teams.filter((t) => t.group === group && qualifySet.has(t.id)).length
+
+  const myThirdPlaceCount = GROUPS.filter(g =>
+    teams.filter(t => t.group === g && qualifySet.has(t.id)).length >= 3
+  ).length
 
   function toggleQualify(teamId: string, group: string) {
     if (!isOpen) return
@@ -175,7 +181,14 @@ export function GroupPredictionsClient({
       if (next.has(teamId)) {
         next.delete(teamId)
       } else {
-        if (groupQualifyCount(group) >= 2) return prev
+        const groupCount = teams.filter(t => t.group === group && next.has(t.id)).length
+        if (groupCount >= 3) return prev
+        if (groupCount === 2) {
+          const usedThird = GROUPS.filter(g =>
+            teams.filter(t => t.group === g && next.has(t.id)).length >= 3
+          ).length
+          if (usedThird >= MAX_THIRD_PLACE) return prev
+        }
         next.add(teamId)
       }
       return next
@@ -222,7 +235,7 @@ export function GroupPredictionsClient({
 
   const myMatchCount = Object.keys(predMap).length
   const missingMatches = totalGroupMatches - myMatchCount
-  const TOTAL_QUALIFY = GROUPS.length * 2
+  const TOTAL_QUALIFY = GROUPS.length * 2 + MAX_THIRD_PLACE  // 32: 24 directos + 8 terceros
   const missingQualify = TOTAL_QUALIFY - qualifySet.size
   const showWarning = isOpen && (missingMatches > 0 || missingQualify > 0)
 
@@ -456,26 +469,82 @@ export function GroupPredictionsClient({
         <div className="space-y-4">
           {!viewingUser && (
             <p className="text-sm text-gray-400">
-              Selecciona los <strong className="text-white">2 equipos</strong> de cada grupo que crees que clasificarán.
+              Elige los <strong className="text-white">2 equipos directos</strong> de cada grupo más hasta{' '}
+              <strong className="text-sky-400">8 terceros clasificados</strong> (uno por grupo).
               Cada acierto vale <strong className="text-amber-400">+5 puntos</strong>.
             </p>
           )}
+
+          {/* Contador global de terceros */}
+          {(() => {
+            const activeThird = GROUPS.filter(g =>
+              teams.filter(t => t.group === g && activeQualifySet.has(t.id)).length >= 3
+            ).length
+            return (
+              <div className={cn(
+                'flex items-center gap-3 px-4 py-2.5 rounded-xl border text-sm',
+                activeThird === MAX_THIRD_PLACE
+                  ? 'bg-sky-500/10 border-sky-500/30'
+                  : 'bg-gray-800/60 border-gray-700',
+              )}>
+                <span className="text-gray-400">3.os clasificados:</span>
+                <span className={cn('font-black text-base', activeThird === MAX_THIRD_PLACE ? 'text-sky-400' : 'text-white')}>
+                  {activeThird}/{MAX_THIRD_PLACE}
+                </span>
+                <div className="flex gap-1 ml-1">
+                  {Array.from({ length: MAX_THIRD_PLACE }, (_, i) => (
+                    <span key={i} className={cn('w-2 h-2 rounded-full transition-colors',
+                      i < activeThird ? 'bg-sky-400' : 'bg-gray-700')} />
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
+
           <div className="space-y-4">
             {GROUPS.map((g) => {
               const allGroupTeams = teams.filter((t) => t.group === g)
-              const count = allGroupTeams.filter(t => activeQualifySet.has(t.id)).length
+              const activeCount = allGroupTeams.filter(t => activeQualifySet.has(t.id)).length
+              const hasThirdPick = activeCount >= 3
+
+              // Determinar cuál es el 3.er clasificado según simulación
+              const gMatches = matches.filter(m => m.group_name === g)
+              const standings = simulateGroupStandings(allGroupTeams, gMatches, activePredMap)
+              const predictedThirdId = standings.length >= 3 ? standings[2].teamId : null
+              const isThirdPick = (teamId: string) =>
+                hasThirdPick && activeQualifySet.has(teamId) &&
+                (predictedThirdId === teamId ||
+                  (!activeQualifySet.has(predictedThirdId ?? '') &&
+                    allGroupTeams.filter(t => activeQualifySet.has(t.id)).at(-1)?.id === teamId))
+
               return (
                 <div key={g} className="glass rounded-xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-bold text-white">Grupo {g}</h3>
-                    <span className={cn('text-xs font-semibold', count === 2 ? 'text-green-400' : 'text-gray-500')}>
-                      {count}/2 seleccionados
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {hasThirdPick && (
+                        <span className="text-xs font-semibold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded-full">
+                          +3.er puesto
+                        </span>
+                      )}
+                      <span className={cn('text-xs font-semibold',
+                        activeCount >= 3 ? 'text-sky-400' :
+                        activeCount === 2 ? 'text-green-400' : 'text-gray-500')}>
+                        {activeCount}/{hasThirdPick ? 3 : 2}
+                      </span>
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {allGroupTeams.map((team) => {
                       const selected = activeQualifySet.has(team.id)
-                      const disabled = !isOpen || !!viewingUser || (!selected && groupQualifyCount(g) >= 2)
+                      const third = isThirdPick(team.id)
+                      const myGroupCount = groupQualifyCount(g)
+                      const disabled = !isOpen || !!viewingUser || (
+                        !selected && (
+                          myGroupCount >= 3 ||
+                          (myGroupCount === 2 && myThirdPlaceCount >= MAX_THIRD_PLACE)
+                        )
+                      )
                       return (
                         <button
                           key={team.id}
@@ -483,7 +552,9 @@ export function GroupPredictionsClient({
                           onClick={() => toggleQualify(team.id, g)}
                           className={cn(
                             'flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all',
-                            selected
+                            selected && third
+                              ? 'border-sky-500 bg-sky-500/15 text-sky-300'
+                              : selected
                               ? 'border-amber-500 bg-amber-500/15 text-amber-300'
                               : disabled
                               ? 'border-gray-800 bg-gray-900 text-gray-600 cursor-not-allowed'
@@ -495,7 +566,12 @@ export function GroupPredictionsClient({
                             : <span className="text-xl">{team.flag}</span>
                           }
                           <span className="truncate">{team.name}</span>
-                          {selected && <CheckCircle size={14} className="ml-auto text-amber-400 flex-shrink-0" />}
+                          {selected && third
+                            ? <span className="ml-auto text-sky-400 text-xs font-bold flex-shrink-0">3.º</span>
+                            : selected
+                            ? <CheckCircle size={14} className="ml-auto text-amber-400 flex-shrink-0" />
+                            : null
+                          }
                         </button>
                       )
                     })}
@@ -534,7 +610,7 @@ export function GroupPredictionsClient({
                   </p>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-gray-500">{matchCount}/{totalGroupMatches} partidos</span>
-                    <span className="text-xs text-gray-500">{qualifyCount}/24 clasificados</span>
+                    <span className="text-xs text-gray-500">{qualifyCount}/32 clasificados</span>
                     <span className={cn(
                       'text-xs font-semibold',
                       pct === 100 ? 'text-green-400' : pct >= 50 ? 'text-amber-400' : 'text-red-400',

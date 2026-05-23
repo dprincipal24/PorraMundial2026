@@ -77,12 +77,31 @@ export default function RulesPage() {
           </div>
         </div>
 
-        <div className="pt-1 border-t border-gray-800 space-y-1.5">
+        <div className="pt-1 border-t border-gray-800 space-y-2.5">
           <p className="text-sm font-bold text-white">Clasificados de grupo</p>
           <p className="text-sm text-gray-400">
-            Elige también los <span className="text-white">2 equipos</span> de cada grupo que crees que pasarán a la siguiente ronda.
-            Cada acierto vale <span className="text-white font-bold">+5 puntos</span> (24 equipos clasificados en total).
+            El Mundial 2026 tiene <strong className="text-white">12 grupos de 4 equipos</strong>. Clasifican directamente los 2 primeros de cada grupo (24 equipos) más los <strong className="text-sky-400">8 mejores terceros</strong> de los 12 grupos.
           </p>
+          <div className="space-y-1.5 text-sm">
+            <div className="flex items-start gap-2">
+              <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">2</span>
+              <p className="text-gray-300"><strong className="text-white">Directos:</strong> los 2 primeros de cada grupo — elige <strong>2 por grupo</strong> · +5 pts por acierto</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="w-5 h-5 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">8</span>
+              <p className="text-gray-300"><strong className="text-sky-400">Terceros:</strong> los 8 mejores 3.os clasificados — elige hasta <strong>1 tercero</strong> por grupo (máx. 8 en total) · +5 pts por acierto</p>
+            </div>
+          </div>
+          <div className="bg-gray-800/50 rounded-lg px-3 py-2.5 text-xs text-gray-400 space-y-1">
+            <p className="font-semibold text-gray-300">¿Qué 8 terceros clasifican? Orden de criterios FIFA:</p>
+            <ol className="list-decimal list-inside space-y-0.5 ml-1">
+              <li>Puntos obtenidos en la fase de grupos</li>
+              <li>Diferencia de goles</li>
+              <li>Goles marcados</li>
+              <li>Puntos de fair play (tarjetas)</li>
+              <li>Ranking FIFA</li>
+            </ol>
+          </div>
         </div>
       </section>
 
@@ -181,7 +200,7 @@ export default function RulesPage() {
             <p className="font-black text-white">3 pts</p>
           </div>
           <div className="bg-gray-800/50 rounded-lg px-3 py-2">
-            <p className="text-gray-400 text-xs">Clasificado de grupo</p>
+            <p className="text-gray-400 text-xs">Clasificado de grupo (×32)</p>
             <p className="font-black text-white">5 pts</p>
           </div>
           <div className="bg-gray-800/50 rounded-lg px-3 py-2">
