@@ -37,14 +37,22 @@ export function MatchCard({ match, prediction, onPredictionChange, locked }: Mat
   const isFinished = match.status === 'finished'
   const isLive = match.status === 'live'
   const hasResult = (isFinished || isLive) && match.home_score !== null && match.away_score !== null
+  // Only show inputs for scheduled matches that are not locked
+  const showInputs = !locked && !!onPredictionChange && match.status === 'scheduled'
+
+  // Points earned for this match
+  const points = (() => {
+    if (!isFinished || !prediction || match.home_score === null || match.away_score === null) return null
+    if (match.home_score === prediction.home_score && match.away_score === prediction.away_score) return 6
+    const a = match.home_score > match.away_score ? '1' : match.home_score === match.away_score ? 'X' : '2'
+    const p = prediction.home_score > prediction.away_score ? '1' : prediction.home_score === prediction.away_score ? 'X' : '2'
+    return a === p ? 3 : 0
+  })()
 
   const resultColor = () => {
-    if (!isFinished || match.home_score === null || match.away_score === null || !prediction) return ''
-    if (match.home_score === prediction.home_score && match.away_score === prediction.away_score)
-      return 'border-amber-500/50 bg-amber-500/5'
-    const a1x2 = match.home_score > match.away_score ? '1' : match.home_score === match.away_score ? 'X' : '2'
-    const p1x2 = prediction.home_score > prediction.away_score ? '1' : prediction.home_score === prediction.away_score ? 'X' : '2'
-    if (a1x2 === p1x2) return 'border-green-500/50 bg-green-500/5'
+    if (points === null) return ''
+    if (points === 6) return 'border-amber-500/50 bg-amber-500/5'
+    if (points === 3) return 'border-green-500/50 bg-green-500/5'
     return 'border-red-500/20'
   }
 
@@ -54,7 +62,7 @@ export function MatchCard({ match, prediction, onPredictionChange, locked }: Mat
       isLive && 'border-red-500/40',
       resultColor(),
     )}>
-      {/* Header: fecha, estado */}
+      {/* Header: fecha, estado, puntos */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-black/20">
         <div className="flex items-center gap-3 text-xs text-gray-500">
           <span className="flex items-center gap-1">
@@ -62,9 +70,21 @@ export function MatchCard({ match, prediction, onPredictionChange, locked }: Mat
             <span className="capitalize">{dateInfo.weekday} {dateInfo.day} · {dateInfo.time}</span>
           </span>
         </div>
-        {isLive && <Badge variant="live">EN VIVO</Badge>}
-        {isFinished && <Badge variant="gray">Finalizado</Badge>}
-        {match.status === 'scheduled' && <Badge variant="blue">Programado</Badge>}
+        <div className="flex items-center gap-2">
+          {points !== null && (
+            <span className={cn(
+              'text-xs font-black px-2 py-0.5 rounded-full',
+              points === 6 ? 'bg-amber-500/20 text-amber-400' :
+              points === 3 ? 'bg-green-500/20 text-green-400' :
+                             'bg-red-500/10 text-red-400',
+            )}>
+              {points === 0 ? '+0' : `+${points}`} pts
+            </span>
+          )}
+          {isLive && <Badge variant="live">EN VIVO</Badge>}
+          {isFinished && <Badge variant="gray">Finalizado</Badge>}
+          {match.status === 'scheduled' && <Badge variant="blue">Programado</Badge>}
+        </div>
       </div>
 
       {/* Equipos + marcador */}
@@ -74,7 +94,7 @@ export function MatchCard({ match, prediction, onPredictionChange, locked }: Mat
 
           {/* Marcador central o inputs */}
           <div className="flex flex-col items-center gap-2 min-w-[80px]">
-            {!locked && onPredictionChange ? (
+            {showInputs ? (
               <div className="flex items-center gap-2">
                 <input
                   type="number"
