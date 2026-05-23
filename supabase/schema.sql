@@ -151,6 +151,18 @@ create policy "Usuario crea predicciones de partido"
 create policy "Usuario actualiza sus predicciones de partido"
   on public.match_predictions for update using (auth.uid() = user_id);
 
+do $$ begin
+  create policy "Todos ven pred. partidos cuando cerrado"
+    on public.match_predictions for select
+    using (
+      exists (
+        select 1 from public.app_settings
+        where key = 'group_predictions_open' and (value is null or value != 'true')
+      )
+    );
+exception when duplicate_object then null;
+end $$;
+
 -- ─────────────────────────────────────────────
 -- PREDICCIONES DE CLASIFICACIÓN (quién pasa de grupos)
 -- ─────────────────────────────────────────────
@@ -177,6 +189,18 @@ create policy "Usuario inserta predicciones de clasificación"
 
 create policy "Usuario borra predicciones de clasificación"
   on public.group_qualify_predictions for delete using (auth.uid() = user_id);
+
+do $$ begin
+  create policy "Todos ven pred. clasificados cuando cerrado"
+    on public.group_qualify_predictions for select
+    using (
+      exists (
+        select 1 from public.app_settings
+        where key = 'group_predictions_open' and (value is null or value != 'true')
+      )
+    );
+exception when duplicate_object then null;
+end $$;
 
 -- ─────────────────────────────────────────────
 -- PREDICCIONES ELIMINATORIAS (equipos por ronda)
@@ -205,6 +229,18 @@ create policy "Usuario inserta predicciones eliminatorias"
 
 create policy "Usuario borra predicciones eliminatorias"
   on public.knockout_predictions for delete using (auth.uid() = user_id);
+
+do $$ begin
+  create policy "Todos ven pred. eliminatorias cuando cerrado"
+    on public.knockout_predictions for select
+    using (
+      exists (
+        select 1 from public.app_settings
+        where key = 'knockout_predictions_open' and (value is null or value != 'true')
+      )
+    );
+exception when duplicate_object then null;
+end $$;
 
 -- ─────────────────────────────────────────────
 -- CONFIGURACIÓN DE LA APP

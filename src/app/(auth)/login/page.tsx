@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Lock, User, Trophy } from 'lucide-react'
+import Image from 'next/image'
 
 function usernameToEmail(username: string) {
   const slug = username.trim().toLowerCase().replace(/\s+/g, '.').replace(/[^a-z0-9.]/g, '')
@@ -34,7 +35,7 @@ export default function LoginPage() {
       return
     }
 
-    router.push('/leaderboard')
+    router.push('/inicio')
     router.refresh()
   }
 
@@ -42,8 +43,18 @@ export default function LoginPage() {
     <div className="min-h-screen stars-bg flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <span className="text-5xl">🏆</span>
-          <h1 className="mt-3 text-2xl font-black">
+          <div className="flex justify-center mb-2">
+            <Image
+              src="https://files.tips.gg/static/image/news/World-Cup-2026-Logo-PNG.png"
+              alt="FIFA World Cup 2026"
+              width={240}
+              height={240}
+              className="w-48 sm:w-60 h-auto drop-shadow-2xl"
+              unoptimized
+              priority
+            />
+          </div>
+          <h1 className="mt-1 text-2xl font-black">
             <span className="gold-text">PORRA</span>
             <span className="text-white"> MUNDIAL 2026</span>
           </h1>

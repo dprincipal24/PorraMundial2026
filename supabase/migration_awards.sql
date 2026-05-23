@@ -43,6 +43,7 @@ insert into public.app_settings (key, value) values
 on conflict (key) do nothing;
 
 -- 3. Actualizar función calculate_scores() con puntos de premios
+drop function if exists public.calculate_scores();
 create or replace function public.calculate_scores()
 returns table (
   user_id              uuid,

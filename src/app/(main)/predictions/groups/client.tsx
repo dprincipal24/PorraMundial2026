@@ -8,6 +8,7 @@ import { CountdownTimer } from '@/components/CountdownTimer'
 import { Button } from '@/components/ui/button'
 import { TeamFlag } from '@/components/TeamFlag'
 import { GROUPS } from '@/lib/data/teams'
+import { FIFA_RANKING } from '@/app/(main)/simulador/simulatorLogic'
 import { cn } from '@/lib/utils'
 import { Save, Lock, CheckCircle, Users, Star, AlertTriangle, ArrowLeft } from 'lucide-react'
 import type { Match, MatchPrediction, Team } from '@/lib/types'
@@ -72,7 +73,7 @@ function simulateGroupStandings(
 
   const all = Object.values(s).sort((a, b) => b.points - a.points)
 
-  // Break ties with FIFA tiebreakers: H2H pts → H2H GD → H2H GF → overall GD → overall GF
+  // Desempate oficial FIFA Art. 17 — Reglamento Copa del Mundo 2026
   const result: TeamStats[] = []
   let i = 0
   while (i < all.length) {
@@ -84,11 +85,15 @@ function simulateGroupStandings(
       tied.sort((a, b) => {
         const ha = calcH2H(a.teamId, ids, groupMatches, predMap)
         const hb = calcH2H(b.teamId, ids, groupMatches, predMap)
-        if (hb.points !== ha.points) return hb.points - ha.points
-        if (hb.gd !== ha.gd) return hb.gd - ha.gd
-        if (hb.gf !== ha.gf) return hb.gf - ha.gf
-        if (b.gd !== a.gd) return b.gd - a.gd
-        return b.gf - a.gf
+        if (hb.points !== ha.points) return hb.points - ha.points   // H2H puntos
+        if (hb.gd !== ha.gd) return hb.gd - ha.gd                   // H2H diferencia de goles
+        if (hb.gf !== ha.gf) return hb.gf - ha.gf                   // H2H goles a favor
+        if (b.gd !== a.gd) return b.gd - a.gd                       // DG general
+        if (b.gf !== a.gf) return b.gf - a.gf                       // GF general
+        // Fair play omitido (no rastreable en simulador)
+        const rankA = FIFA_RANKING[a.teamId] ?? 999                  // Ranking FIFA nov 2025
+        const rankB = FIFA_RANKING[b.teamId] ?? 999
+        return rankA - rankB
       })
     }
     result.push(...tied)
@@ -317,7 +322,11 @@ export function GroupPredictionsClient({
         {tabs.map(({ key, label }) => (
           <button
             key={key}
-            onClick={() => { setActiveTab(key as typeof activeTab); setViewingUser(null) }}
+            onClick={() => {
+              const tab = key as typeof activeTab
+              setActiveTab(tab)
+              if (tab === 'all') setViewingUser(null)
+            }}
             className={cn(
               'px-4 py-2 rounded-md text-sm font-semibold transition-all cursor-pointer',
               activeTab === key ? 'bg-amber-500 text-gray-900' : 'text-gray-400 hover:text-white',
@@ -517,12 +526,23 @@ export function GroupPredictionsClient({
                   (!activeQualifySet.has(predictedThirdId ?? '') &&
                     allGroupTeams.filter(t => activeQualifySet.has(t.id)).at(-1)?.id === teamId))
 
+              // Results known only when admin has marked at least one team as qualified
+              const groupHasResults = allGroupTeams.some(t => t.qualified_knockout === true)
+              const groupPoints = !groupHasResults ? null :
+                allGroupTeams.filter(t => activeQualifySet.has(t.id) && t.qualified_knockout === true).length * 5
+
               return (
                 <div key={g} className="glass rounded-xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-bold text-white">Grupo {g}</h3>
                     <div className="flex items-center gap-2">
-                      {hasThirdPick && (
+                      {groupPoints !== null && (
+                        <span className={cn('text-xs font-black px-2 py-0.5 rounded-full',
+                          groupPoints > 0 ? 'text-green-400 bg-green-500/10' : 'text-gray-500 bg-gray-800')}>
+                          {groupPoints > 0 ? `+${groupPoints} pts` : '0 pts'}
+                        </span>
+                      )}
+                      {hasThirdPick && groupPoints === null && (
                         <span className="text-xs font-semibold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded-full">
                           +3.er puesto
                         </span>
@@ -545,6 +565,8 @@ export function GroupPredictionsClient({
                           (myGroupCount === 2 && myThirdPlaceCount >= MAX_THIRD_PLACE)
                         )
                       )
+                      const hit = groupHasResults && selected && team.qualified_knockout === true
+                      const miss = groupHasResults && selected && team.qualified_knockout === false
                       return (
                         <button
                           key={team.id}
@@ -552,7 +574,11 @@ export function GroupPredictionsClient({
                           onClick={() => toggleQualify(team.id, g)}
                           className={cn(
                             'flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all',
-                            selected && third
+                            hit
+                              ? 'border-green-500 bg-green-500/15 text-green-300'
+                              : miss
+                              ? 'border-red-500/50 bg-red-500/10 text-red-400'
+                              : selected && third
                               ? 'border-sky-500 bg-sky-500/15 text-sky-300'
                               : selected
                               ? 'border-amber-500 bg-amber-500/15 text-amber-300'
@@ -566,7 +592,11 @@ export function GroupPredictionsClient({
                             : <span className="text-xl">{team.flag}</span>
                           }
                           <span className="truncate">{team.name}</span>
-                          {selected && third
+                          {hit
+                            ? <span className="ml-auto text-green-400 text-xs font-black flex-shrink-0">+5</span>
+                            : miss
+                            ? <span className="ml-auto text-red-400 text-xs font-black flex-shrink-0">✗</span>
+                            : selected && third
                             ? <span className="ml-auto text-sky-400 text-xs font-bold flex-shrink-0">3.º</span>
                             : selected
                             ? <CheckCircle size={14} className="ml-auto text-amber-400 flex-shrink-0" />

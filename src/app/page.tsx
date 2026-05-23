@@ -8,7 +8,7 @@ export default async function HomePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (user) redirect('/leaderboard')
+  if (user) redirect('/inicio')
 
   return (
     <main className="min-h-screen stars-bg flex flex-col">

@@ -17,14 +17,14 @@ export default async function AwardPredictionsPage() {
   ] = await Promise.all([
     supabase.from('award_predictions').select('*').eq('user_id', user.id),
     supabase.from('app_settings').select('key, value')
-      .in('key', [...AWARDS.map(a => a.settingKey), 'awards_predictions_open', 'awards_predictions_deadline']),
+      .in('key', [...AWARDS.map(a => a.settingKey), 'group_predictions_open', 'group_predictions_deadline']),
     supabase.from('profiles').select('is_admin').eq('id', user.id).single(),
   ])
 
   const settingsMap = Object.fromEntries((settings ?? []).map((s: { key: string; value: string }) => [s.key, s.value]))
   const predMap = Object.fromEntries((predictions ?? []).map((p: { award_type: string; player_name: string }) => [p.award_type, p.player_name]))
-  const isOpen = settingsMap['awards_predictions_open'] !== 'false'
-  const deadline = settingsMap['awards_predictions_deadline'] ?? null
+  const isOpen = settingsMap['group_predictions_open'] === 'true'
+  const deadline = settingsMap['group_predictions_deadline'] ?? null
   const isAdmin = profile?.is_admin ?? false
 
   // Fetch all users' award predictions when closed or admin

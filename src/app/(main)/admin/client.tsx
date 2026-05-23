@@ -9,7 +9,7 @@ import { cn, formatMatchDate } from '@/lib/utils'
 import { TeamFlag } from '@/components/TeamFlag'
 import {
   Settings, Users, Trophy, Star, Save, CheckCircle,
-  Building2, Crown, Database, Medal
+  Building2, Crown, Database, Medal, KeyRound, X
 } from 'lucide-react'
 import { AWARDS, PLAYERS_BY_AWARD, type AwardType } from '@/lib/data/awards'
 import { PlayerSelect } from '@/components/PlayerSelect'
@@ -126,6 +126,27 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
   async function makeAdmin(userId: string, isAdmin: boolean) {
     await supabase.from('profiles').update({ is_admin: isAdmin }).eq('id', userId)
     router.refresh()
+  }
+
+  const [resetingUser, setResetingUser] = useState<string | null>(null)
+  const [newPassword, setNewPassword] = useState('')
+  const [resetMsg, setResetMsg] = useState<{ id: string; ok: boolean; text: string } | null>(null)
+
+  async function handleResetPassword(userId: string) {
+    const res = await fetch('/api/admin/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, password: newPassword }),
+    })
+    const data = await res.json()
+    if (res.ok) {
+      setResetMsg({ id: userId, ok: true, text: 'Contraseña cambiada' })
+      setResetingUser(null)
+      setNewPassword('')
+    } else {
+      setResetMsg({ id: userId, ok: false, text: data.error ?? 'Error' })
+    }
+    setTimeout(() => setResetMsg(null), 3000)
   }
 
   async function seedMatches() {
@@ -522,26 +543,73 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
           <h2 className="font-bold text-white">{profiles.length} participantes registrados</h2>
           <div className="space-y-2">
             {profiles.map((profile) => (
-              <div key={profile.id} className="glass rounded-xl p-4 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-sm font-black text-white">
-                    {profile.name.charAt(0).toUpperCase()}
+              <div key={profile.id} className="glass rounded-xl border border-gray-800 overflow-hidden">
+                <div className="p-4 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-sm font-black text-white">
+                      {profile.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-white text-sm">{profile.name}</p>
+                      <p className="text-xs text-gray-500">{new Date(profile.created_at).toLocaleDateString('es-ES')}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-white text-sm">{profile.name}</p>
-                    <p className="text-xs text-gray-500">{new Date(profile.created_at).toLocaleDateString('es-ES')}</p>
+                  <div className="flex items-center gap-2">
+                    {resetMsg?.id === profile.id && (
+                      <span className={cn('text-xs font-semibold', resetMsg.ok ? 'text-green-400' : 'text-red-400')}>
+                        {resetMsg.text}
+                      </span>
+                    )}
+                    {profile.is_admin && <Badge variant="blue">Admin</Badge>}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setResetingUser(resetingUser === profile.id ? null : profile.id)
+                        setNewPassword('')
+                      }}
+                    >
+                      <KeyRound size={12} />
+                      Contraseña
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={profile.is_admin ? 'danger' : 'outline'}
+                      onClick={() => makeAdmin(profile.id, !profile.is_admin)}
+                    >
+                      {profile.is_admin ? 'Quitar admin' : 'Hacer admin'}
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {profile.is_admin && <Badge variant="blue">Admin</Badge>}
-                  <Button
-                    size="sm"
-                    variant={profile.is_admin ? 'danger' : 'outline'}
-                    onClick={() => makeAdmin(profile.id, !profile.is_admin)}
-                  >
-                    {profile.is_admin ? 'Quitar admin' : 'Hacer admin'}
-                  </Button>
-                </div>
+
+                {resetingUser === profile.id && (
+                  <div className="px-4 pb-4 flex items-center gap-2 border-t border-gray-800 pt-3">
+                    <input
+                      type="text"
+                      placeholder="Nueva contraseña (mín. 6 caracteres)"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && newPassword.length >= 6 && handleResetPassword(profile.id)}
+                      className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500"
+                      autoFocus
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => handleResetPassword(profile.id)}
+                      disabled={newPassword.length < 6}
+                    >
+                      <Save size={12} />
+                      Guardar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => { setResetingUser(null); setNewPassword('') }}
+                    >
+                      <X size={12} />
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

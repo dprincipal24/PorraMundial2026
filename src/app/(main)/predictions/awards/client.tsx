@@ -8,6 +8,7 @@ import { TeamFlag } from '@/components/TeamFlag'
 import { PlayerSelect } from '@/components/PlayerSelect'
 import { cn } from '@/lib/utils'
 import { AWARDS, PLAYERS_BY_AWARD, type AwardType } from '@/lib/data/awards'
+import { CountdownTimer } from '@/components/CountdownTimer'
 import { Save, Lock, CheckCircle, XCircle, Medal, AlertTriangle, Users } from 'lucide-react'
 
 type AllUserPred = {
@@ -44,6 +45,7 @@ export function AwardPredictionsClient({
   predMap: initialPredMap,
   winners,
   isOpen,
+  deadline,
   isAdmin,
   allUsersPreds,
 }: AwardPredictionsClientProps) {
@@ -97,6 +99,7 @@ export function AwardPredictionsClient({
             {completedCount}/4 premios pronosticados · 25 pts cada uno
           </p>
         </div>
+        {isOpen && deadline && <CountdownTimer deadline={deadline} label="Cierre de pronósticos" />}
         {!isOpen && (
           <div className="flex items-center gap-2 text-red-400 text-sm">
             <Lock size={14} />

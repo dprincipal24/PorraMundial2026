@@ -58,7 +58,7 @@ export default function RegisterPage() {
 
     setSuccess(true)
     setTimeout(() => {
-      window.location.href = '/leaderboard'
+      window.location.href = '/inicio'
     }, 1200)
   }
 
