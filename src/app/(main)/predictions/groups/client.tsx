@@ -114,6 +114,7 @@ interface GroupPredictionsClientProps {
   isAdmin: boolean
   allUsersPreds: AllUserPred[]
   totalGroupMatches: number
+  initialViewingUser?: AllUserPred | null
 }
 
 function UserAvatar({ avatarUrl, name, size = 7 }: { avatarUrl: string | null; name: string; size?: number }) {
@@ -142,6 +143,7 @@ export function GroupPredictionsClient({
   isAdmin,
   allUsersPreds,
   totalGroupMatches,
+  initialViewingUser,
 }: GroupPredictionsClientProps) {
   const [activeTab, setActiveTab] = useState<'matches' | 'qualify' | 'all'>('matches')
   const [activeGroup, setActiveGroup] = useState('A')
@@ -152,7 +154,7 @@ export function GroupPredictionsClient({
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
-  const [viewingUser, setViewingUser] = useState<AllUserPred | null>(null)
+  const [viewingUser, setViewingUser] = useState<AllUserPred | null>(initialViewingUser ?? null)
 
   const supabase = createClient()
 

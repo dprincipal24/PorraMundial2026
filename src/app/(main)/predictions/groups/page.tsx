@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { GroupPredictionsClient } from './client'
 
-export default async function GroupPredictionsPage() {
+export default async function GroupPredictionsPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -65,6 +65,11 @@ export default async function GroupPredictionsPage() {
     }))
   }
 
+  const { view: viewUserId } = await searchParams
+  const initialViewingUser = viewUserId
+    ? (allUsersPreds.find(p => p.profile.id === viewUserId) ?? null)
+    : null
+
   return (
     <GroupPredictionsClient
       matches={matches ?? []}
@@ -77,6 +82,7 @@ export default async function GroupPredictionsPage() {
       isAdmin={isAdmin}
       allUsersPreds={allUsersPreds}
       totalGroupMatches={(matches ?? []).length}
+      initialViewingUser={initialViewingUser}
     />
   )
 }

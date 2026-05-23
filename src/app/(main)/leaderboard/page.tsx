@@ -17,11 +17,14 @@ export default async function LeaderboardPage() {
   const { data: settings } = await supabase.from('app_settings').select('key, value')
   const settingsMap = Object.fromEntries((settings ?? []).map((s: { key: string; value: string }) => [s.key, s.value]))
 
+  const groupPredsClosed = settingsMap['group_predictions_open'] !== 'true'
+
   return (
     <LeaderboardClient
       scores={ranked}
       currentUserId={user?.id}
       phase={settingsMap['phase'] ?? 'group_predictions'}
+      groupPredsClosed={groupPredsClosed}
     />
   )
 }

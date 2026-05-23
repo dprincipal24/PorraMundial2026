@@ -14,6 +14,7 @@ interface LeaderboardClientProps {
   scores: UserScore[]
   currentUserId?: string
   phase: string
+  groupPredsClosed?: boolean
 }
 
 const PHASE_LABELS: Record<string, string> = {
@@ -44,7 +45,7 @@ function AvatarDisplay({ avatarUrl, name, size = 10 }: { avatarUrl: string | nul
   )
 }
 
-export function LeaderboardClient({ scores: initialScores, currentUserId, phase }: LeaderboardClientProps) {
+export function LeaderboardClient({ scores: initialScores, currentUserId, phase, groupPredsClosed }: LeaderboardClientProps) {
   const [scores, setScores] = useState<UserScore[]>(initialScores)
   const [refreshing, setRefreshing] = useState(false)
   const [lastUpdate, setLastUpdate] = useState(new Date())
@@ -250,7 +251,7 @@ export function LeaderboardClient({ scores: initialScores, currentUserId, phase 
       </div>
 
       {/* Table */}
-      <LeaderboardTable scores={scores} currentUserId={currentUserId} />
+      <LeaderboardTable scores={scores} currentUserId={currentUserId} linkable={groupPredsClosed} />
 
       <p className="text-center text-xs text-gray-700">
         Actualizado {lastUpdate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}

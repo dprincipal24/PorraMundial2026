@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { Trophy, Medal } from 'lucide-react'
 import type { UserScore } from '@/lib/types'
@@ -6,6 +7,7 @@ import type { UserScore } from '@/lib/types'
 interface LeaderboardTableProps {
   scores: UserScore[]
   currentUserId?: string
+  linkable?: boolean
 }
 
 function PositionIcon({ pos }: { pos: number }) {
@@ -42,7 +44,7 @@ function Avatar({ avatarUrl, name }: { avatarUrl: string | null; name: string })
   )
 }
 
-export function LeaderboardTable({ scores, currentUserId }: LeaderboardTableProps) {
+export function LeaderboardTable({ scores, currentUserId, linkable }: LeaderboardTableProps) {
   return (
     <div className="rounded-xl border border-gray-800 overflow-hidden">
       {/* Header */}
@@ -76,10 +78,23 @@ export function LeaderboardTable({ scores, currentUserId }: LeaderboardTableProp
               <div className="flex items-center gap-2.5 min-w-0">
                 <Avatar avatarUrl={score.avatar_url} name={score.name} />
                 <div className="min-w-0">
-                  <p className={cn('text-sm font-semibold truncate', isMe ? 'text-amber-400' : 'text-white')}>
-                    {score.name}
-                    {isMe && <span className="ml-1 text-xs text-amber-500">(tú)</span>}
-                  </p>
+                  {linkable ? (
+                    <Link
+                      href={`/predictions/groups?view=${score.user_id}`}
+                      className={cn(
+                        'text-sm font-semibold truncate block hover:underline underline-offset-2',
+                        isMe ? 'text-amber-400' : 'text-white',
+                      )}
+                    >
+                      {score.name}
+                      {isMe && <span className="ml-1 text-xs text-amber-500">(tú)</span>}
+                    </Link>
+                  ) : (
+                    <p className={cn('text-sm font-semibold truncate', isMe ? 'text-amber-400' : 'text-white')}>
+                      {score.name}
+                      {isMe && <span className="ml-1 text-xs text-amber-500">(tú)</span>}
+                    </p>
+                  )}
                 </div>
               </div>
 
