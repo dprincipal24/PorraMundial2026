@@ -29,7 +29,7 @@ export default function RulesPage() {
           </div>
           <div className="bg-gray-400/10 rounded-lg py-3 px-2">
             <p className="text-2xl mb-1">🥈</p>
-            <p className="font-black text-gray-300">2N + 6 €</p>
+            <p className="font-black text-gray-300">2N €</p>
             <p className="text-xs text-gray-500 mt-0.5">2.º clasificado</p>
           </div>
           <div className="bg-amber-700/10 rounded-lg py-3 px-2">
