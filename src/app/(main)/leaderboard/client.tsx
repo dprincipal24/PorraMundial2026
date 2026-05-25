@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { BarChart2, RefreshCw, Coins, X, Check, FileDown, Lock } from 'lucide-react'
 import { AVATAR_EMOJIS } from '@/lib/data/awards'
 import type { UserScore } from '@/lib/types'
+import type { KnockoutBreakdown } from './page'
 
 interface LeaderboardClientProps {
   scores: UserScore[]
@@ -17,6 +18,7 @@ interface LeaderboardClientProps {
   groupPredsClosed?: boolean
   knockoutPredsClosed?: boolean
   isAdmin?: boolean
+  knockoutBreakdown?: KnockoutBreakdown
 }
 
 const PHASE_LABELS: Record<string, string> = {
@@ -47,7 +49,7 @@ function AvatarDisplay({ avatarUrl, name, size = 10 }: { avatarUrl: string | nul
   )
 }
 
-export function LeaderboardClient({ scores: initialScores, currentUserId, phase, groupPredsClosed, knockoutPredsClosed, isAdmin }: LeaderboardClientProps) {
+export function LeaderboardClient({ scores: initialScores, currentUserId, phase, groupPredsClosed, knockoutPredsClosed, isAdmin, knockoutBreakdown }: LeaderboardClientProps) {
   const [scores, setScores] = useState<UserScore[]>(initialScores)
   const [refreshing, setRefreshing] = useState(false)
   const [lastUpdate, setLastUpdate] = useState(new Date())
@@ -308,7 +310,7 @@ export function LeaderboardClient({ scores: initialScores, currentUserId, phase,
       )}
 
       {/* Table */}
-      <LeaderboardTable scores={scores} currentUserId={currentUserId} linkable={groupPredsClosed} />
+      <LeaderboardTable scores={scores} currentUserId={currentUserId} linkable={groupPredsClosed} knockoutBreakdown={knockoutBreakdown} />
 
       <p className="text-center text-xs text-gray-700">
         Actualizado {lastUpdate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
