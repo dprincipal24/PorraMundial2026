@@ -182,7 +182,7 @@ export default function RulesPage() {
           </div>
           <div className="flex gap-2">
             <CheckCircle size={15} className="text-green-400 shrink-0 mt-0.5" />
-            <p>Cuando el plazo cierra, podrás ver los pronósticos del resto de participantes.</p>
+            <p>Cuando el plazo cierra, podrás ver los pronósticos del resto de participantes y descargar un <span className="text-white font-semibold">PDF con todos los pronósticos</span>, firmado con la fecha y hora exacta de descarga, como garantía de que no habrá modificaciones a posteriori.</p>
           </div>
         </div>
       </section>
