@@ -119,10 +119,7 @@ export function LeaderboardTable({ scores, currentUserId, linkable, knockoutBrea
                 <td className={cn(tdCls, 'hidden sm:table-cell')}>{ko?.final ?? 0}</td>
                 <td className={cn(tdCls, 'hidden sm:table-cell')}>{ko?.champion ?? 0}</td>
                 <td className={cn(tdCls, 'hidden sm:table-cell')}>{score.award_points ?? 0}</td>
-                <td className={cn(
-                  'px-2 py-3 text-right text-base font-black',
-                  idx === 0 ? 'text-amber-400' : isMe ? 'text-amber-300' : 'text-white',
-                )}>
+                <td className="px-2 py-3 text-right text-base font-black text-amber-400">
                   {score.total_points}
                 </td>
               </tr>

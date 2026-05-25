@@ -172,22 +172,18 @@ export function LeaderboardClient({ scores: initialScores, currentUserId, phase,
               <p className="text-xs text-gray-500">puntos</p>
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-gray-800">
+          <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-800">
             <div className="text-center">
-              <p className="text-lg font-bold text-white">{myScore.match_points}</p>
-              <p className="text-xs text-gray-500">Partidos</p>
+              <p className="text-lg font-bold text-white">{myScore.match_points + myScore.group_qualify_points}</p>
+              <p className="text-xs text-gray-500">Fase de grupos</p>
             </div>
             <div className="text-center border-x border-gray-800">
-              <p className="text-lg font-bold text-white">{myScore.group_qualify_points}</p>
-              <p className="text-xs text-gray-500">Clasif.</p>
-            </div>
-            <div className="text-center border-r border-gray-800">
               <p className="text-lg font-bold text-white">{myScore.knockout_points}</p>
-              <p className="text-xs text-gray-500">Elim.</p>
+              <p className="text-xs text-gray-500">Eliminatorias</p>
             </div>
             <div className="text-center">
-              <p className="text-lg font-bold text-amber-300">{myScore.award_points ?? 0}</p>
-              <p className="text-xs text-gray-500">Premios</p>
+              <p className="text-lg font-bold text-white">{myScore.award_points ?? 0}</p>
+              <p className="text-xs text-gray-500">Premios indiv.</p>
             </div>
           </div>
         </div>
