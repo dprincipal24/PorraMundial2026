@@ -38,7 +38,6 @@ const S = StyleSheet.create({
   champion: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: '#B45309' },
 
   sectionTitle: { fontSize: 6.5, fontFamily: 'Helvetica-Bold', color: '#9CA3AF', marginTop: 7, marginBottom: 3 },
-  divider: { borderBottomWidth: 1, borderBottomColor: '#E5E7EB', borderBottomStyle: 'solid', marginVertical: 5 },
 
   footer: { position: 'absolute', bottom: 18, left: PAD, right: PAD, flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 0.5, borderTopColor: '#E5E7EB', borderTopStyle: 'solid', paddingTop: 4 },
   footerText: { fontSize: 6.5, color: '#9CA3AF' },
@@ -52,52 +51,48 @@ interface Props {
 export function KnockoutPdfDocument({ users, generatedAt }: Props) {
   return (
     <Document title="Porra Mundial 2026 — Eliminatorias">
-      <Page size="A4" style={S.page}>
-        <Text style={S.docTitle}>PORRA MUNDIAL 2026</Text>
-        <Text style={S.docSub}>Pronósticos — Fase Eliminatoria</Text>
-        <Text style={S.docTs}>
-          Descargado el {generatedAt} · {users.length} participantes · Documento de transparencia
-        </Text>
+      {users.map((user) => (
+        <Page key={user.id} size="A4" style={S.page}>
+          <Text style={S.docTitle}>PORRA MUNDIAL 2026</Text>
+          <Text style={S.docSub}>Pronósticos — Fase Eliminatoria</Text>
+          <Text style={S.docTs}>
+            Descargado el {generatedAt} · {users.length} participantes · Documento de transparencia
+          </Text>
 
-        {users.map((user, uIdx) => (
-          <View key={user.id}>
-            {uIdx > 0 && <View style={S.divider} />}
-
-            <View style={S.userBar}>
-              <Text style={S.userName}>{user.name}</Text>
-            </View>
-
-            <Text style={S.sectionTitle}>PREDICCIONES FASE ELIMINATORIA</Text>
-
-            {ROUNDS.map((round) => {
-              const ids = user.roundPicks[round.key] ?? []
-              const isChampion = round.key === 'champion'
-              return (
-                <View key={round.key} style={S.roundSection} wrap={false}>
-                  <Text style={S.roundTitle}>{round.label} ({round.count})</Text>
-                  {ids.length > 0 ? (
-                    <View style={S.teamsRow}>
-                      {ids.map((tid) => (
-                        <Text key={tid} style={isChampion ? S.champion : S.teamChip}>
-                          {TEAM_NAME[tid] ?? tid}
-                        </Text>
-                      ))}
-                    </View>
-                  ) : (
-                    <Text style={S.noTeams}>Sin pronostico</Text>
-                  )}
-                </View>
-              )
-            })}
+          <View style={S.userBar}>
+            <Text style={S.userName}>{user.name}</Text>
           </View>
-        ))}
 
-        <View style={S.footer} fixed>
-          <Text style={S.footerText}>Porra Mundial 2026 · Fase Eliminatoria · Documento de transparencia</Text>
-          <Text style={S.footerText}>{generatedAt}</Text>
-          <Text style={S.footerText} render={({ pageNumber, totalPages }) => `Pág. ${pageNumber} / ${totalPages}`} />
-        </View>
-      </Page>
+          <Text style={S.sectionTitle}>PREDICCIONES FASE ELIMINATORIA</Text>
+
+          {ROUNDS.map((round) => {
+            const ids = user.roundPicks[round.key] ?? []
+            const isChampion = round.key === 'champion'
+            return (
+              <View key={round.key} style={S.roundSection} wrap={false}>
+                <Text style={S.roundTitle}>{round.label} ({round.count})</Text>
+                {ids.length > 0 ? (
+                  <View style={S.teamsRow}>
+                    {ids.map((tid) => (
+                      <Text key={tid} style={isChampion ? S.champion : S.teamChip}>
+                        {TEAM_NAME[tid] ?? tid}
+                      </Text>
+                    ))}
+                  </View>
+                ) : (
+                  <Text style={S.noTeams}>Sin pronostico</Text>
+                )}
+              </View>
+            )
+          })}
+
+          <View style={S.footer} fixed>
+            <Text style={S.footerText}>Porra Mundial 2026 · Fase Eliminatoria · Documento de transparencia</Text>
+            <Text style={S.footerText}>{generatedAt}</Text>
+            <Text style={S.footerText} render={({ pageNumber, totalPages }) => `Pág. ${pageNumber} / ${totalPages}`} />
+          </View>
+        </Page>
+      ))}
     </Document>
   )
 }

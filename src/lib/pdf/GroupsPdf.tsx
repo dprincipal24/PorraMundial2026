@@ -57,8 +57,6 @@ const S = StyleSheet.create({
   awardVal: { flex: 1, fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: '#1F2937' },
   awardNone: { flex: 1, fontSize: 7.5, color: '#D1D5DB' },
 
-  divider: { borderBottomWidth: 1, borderBottomColor: '#E5E7EB', borderBottomStyle: 'solid', marginVertical: 5 },
-
   footer: { position: 'absolute', bottom: 18, left: PAD, right: PAD, flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 0.5, borderTopColor: '#E5E7EB', borderTopStyle: 'solid', paddingTop: 4 },
   footerText: { fontSize: 6.5, color: '#9CA3AF' },
 })
@@ -82,103 +80,101 @@ export function GroupsPdfDocument({ users, matches, generatedAt }: Props) {
 
   return (
     <Document title="Porra Mundial 2026 — Grupos y Premios">
-      <Page size="A4" style={S.page}>
-        <Text style={S.docTitle}>PORRA MUNDIAL 2026</Text>
-        <Text style={S.docSub}>Pronósticos — Fase de Grupos y Premios Individuales</Text>
-        <Text style={S.docTs}>
-          Descargado el {generatedAt} · {users.length} participantes · Documento de transparencia
-        </Text>
-
-        {users.map((user, uIdx) => {
-          const qualifyByGroup: Record<string, string[]> = {}
-          for (const tid of user.qualifyIds) {
-            const g = TEAM_GROUP[tid]
-            if (g) {
-              if (!qualifyByGroup[g]) qualifyByGroup[g] = []
-              qualifyByGroup[g].push(TEAM_NAME[tid] ?? tid)
-            }
+      {users.map((user) => {
+        const qualifyByGroup: Record<string, string[]> = {}
+        for (const tid of user.qualifyIds) {
+          const g = TEAM_GROUP[tid]
+          if (g) {
+            if (!qualifyByGroup[g]) qualifyByGroup[g] = []
+            qualifyByGroup[g].push(TEAM_NAME[tid] ?? tid)
           }
+        }
 
-          return (
-            <View key={user.id}>
-              {uIdx > 0 && <View style={S.divider} />}
+        return (
+          <Page key={user.id} size="A4" style={S.page}>
+            {/* Page header */}
+            <Text style={S.docTitle}>PORRA MUNDIAL 2026</Text>
+            <Text style={S.docSub}>Pronósticos — Fase de Grupos y Premios Individuales</Text>
+            <Text style={S.docTs}>
+              Descargado el {generatedAt} · {users.length} participantes · Documento de transparencia
+            </Text>
 
-              <View style={S.userBar}>
-                <Text style={S.userName}>{user.name}</Text>
-              </View>
-
-              {/* Match predictions by group */}
-              <Text style={S.sectionTitle}>PARTIDOS DE LA FASE DE GRUPOS</Text>
-              {GROUP_ROWS.map((rowGroups, rIdx) => (
-                <View key={rIdx} style={S.groupsRow} wrap={false}>
-                  {rowGroups.map((g) => (
-                    <View key={g} style={S.groupCol}>
-                      <Text style={S.groupLabel}>Grupo {g}</Text>
-                      {(byGroup[g] ?? []).map((m) => {
-                        const pred = user.matchPreds[m.id]
-                        return (
-                          <View key={m.id} style={S.matchRow}>
-                            <Text style={S.mNum}>{m.num}</Text>
-                            <Text style={S.mHome}>{m.home}</Text>
-                            {pred !== undefined
-                              ? <Text style={S.mScore}>{pred.home}-{pred.away}</Text>
-                              : <Text style={S.mNoScore}>—</Text>
-                            }
-                            <Text style={S.mAway}>{m.away}</Text>
-                          </View>
-                        )
-                      })}
-                    </View>
-                  ))}
-                </View>
-              ))}
-
-              {/* Qualify picks */}
-              <Text style={S.sectionTitle}>CLASIFICADOS A LA FASE FINAL (32 equipos)</Text>
-              <View style={S.qualifyGrid}>
-                {GROUPS.map((g) => {
-                  const picks = qualifyByGroup[g] ?? []
-                  const [d1, d2, t3] = picks
-                  const text = picks.length === 0
-                    ? '—'
-                    : t3
-                    ? `${d1}, ${d2} +${t3}(3.º)`
-                    : picks.join(', ')
-                  return (
-                    <View key={g} style={S.qualifyItem}>
-                      <Text style={S.qualifyG}>{g}:</Text>
-                      <Text style={S.qualifyT}>{text}</Text>
-                    </View>
-                  )
-                })}
-              </View>
-
-              {/* Awards */}
-              <Text style={S.sectionTitle}>PREMIOS INDIVIDUALES</Text>
-              <View style={S.awardsRow}>
-                {AWARDS.map((award) => {
-                  const pick = user.awards[award.type]
-                  return (
-                    <View key={award.type} style={S.awardItem}>
-                      <Text style={S.awardKey}>{award.label}:</Text>
-                      {pick
-                        ? <Text style={S.awardVal}>{pick}</Text>
-                        : <Text style={S.awardNone}>Sin pronóstico</Text>
-                      }
-                    </View>
-                  )
-                })}
-              </View>
+            <View style={S.userBar}>
+              <Text style={S.userName}>{user.name}</Text>
             </View>
-          )
-        })}
 
-        <View style={S.footer} fixed>
-          <Text style={S.footerText}>Porra Mundial 2026 · Grupos y Premios · Documento de transparencia</Text>
-          <Text style={S.footerText}>{generatedAt}</Text>
-          <Text style={S.footerText} render={({ pageNumber, totalPages }) => `Pág. ${pageNumber} / ${totalPages}`} />
-        </View>
-      </Page>
+            {/* Match predictions by group */}
+            <Text style={S.sectionTitle}>PARTIDOS DE LA FASE DE GRUPOS</Text>
+            {GROUP_ROWS.map((rowGroups, rIdx) => (
+              <View key={rIdx} style={S.groupsRow} wrap={false}>
+                {rowGroups.map((g) => (
+                  <View key={g} style={S.groupCol}>
+                    <Text style={S.groupLabel}>Grupo {g}</Text>
+                    {(byGroup[g] ?? []).map((m) => {
+                      const pred = user.matchPreds[m.id]
+                      return (
+                        <View key={m.id} style={S.matchRow}>
+                          <Text style={S.mNum}>{m.num}</Text>
+                          <Text style={S.mHome}>{m.home}</Text>
+                          {pred !== undefined
+                            ? <Text style={S.mScore}>{pred.home}-{pred.away}</Text>
+                            : <Text style={S.mNoScore}>—</Text>
+                          }
+                          <Text style={S.mAway}>{m.away}</Text>
+                        </View>
+                      )
+                    })}
+                  </View>
+                ))}
+              </View>
+            ))}
+
+            {/* Qualify picks */}
+            <Text style={S.sectionTitle}>CLASIFICADOS A LA FASE FINAL (32 equipos)</Text>
+            <View style={S.qualifyGrid}>
+              {GROUPS.map((g) => {
+                const picks = qualifyByGroup[g] ?? []
+                const [d1, d2, t3] = picks
+                const text = picks.length === 0
+                  ? '—'
+                  : t3
+                  ? `${d1}, ${d2} +${t3}(3.º)`
+                  : picks.join(', ')
+                return (
+                  <View key={g} style={S.qualifyItem}>
+                    <Text style={S.qualifyG}>{g}:</Text>
+                    <Text style={S.qualifyT}>{text}</Text>
+                  </View>
+                )
+              })}
+            </View>
+
+            {/* Awards */}
+            <Text style={S.sectionTitle}>PREMIOS INDIVIDUALES</Text>
+            <View style={S.awardsRow}>
+              {AWARDS.map((award) => {
+                const pick = user.awards[award.type]
+                return (
+                  <View key={award.type} style={S.awardItem}>
+                    <Text style={S.awardKey}>{award.label}:</Text>
+                    {pick
+                      ? <Text style={S.awardVal}>{pick}</Text>
+                      : <Text style={S.awardNone}>Sin pronóstico</Text>
+                    }
+                  </View>
+                )
+              })}
+            </View>
+
+            {/* Footer */}
+            <View style={S.footer} fixed>
+              <Text style={S.footerText}>Porra Mundial 2026 · Grupos y Premios · Documento de transparencia</Text>
+              <Text style={S.footerText}>{generatedAt}</Text>
+              <Text style={S.footerText} render={({ pageNumber, totalPages }) => `Pág. ${pageNumber} / ${totalPages}`} />
+            </View>
+          </Page>
+        )
+      })}
     </Document>
   )
 }
