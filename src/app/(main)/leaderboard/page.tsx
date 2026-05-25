@@ -18,6 +18,10 @@ export default async function LeaderboardPage() {
   const settingsMap = Object.fromEntries((settings ?? []).map((s: { key: string; value: string }) => [s.key, s.value]))
 
   const groupPredsClosed = settingsMap['group_predictions_open'] !== 'true'
+  const knockoutPredsClosed = settingsMap['knockout_predictions_open'] !== 'true'
+
+  const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user!.id).single()
+  const isAdmin = profile?.is_admin ?? false
 
   return (
     <LeaderboardClient
@@ -25,6 +29,8 @@ export default async function LeaderboardPage() {
       currentUserId={user?.id}
       phase={settingsMap['phase'] ?? 'group_predictions'}
       groupPredsClosed={groupPredsClosed}
+      knockoutPredsClosed={knockoutPredsClosed}
+      isAdmin={isAdmin}
     />
   )
 }

@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { LeaderboardTable } from '@/components/LeaderboardTable'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { BarChart2, RefreshCw, Coins, X, Check } from 'lucide-react'
+import { BarChart2, RefreshCw, Coins, X, Check, FileDown, Lock } from 'lucide-react'
 import { AVATAR_EMOJIS } from '@/lib/data/awards'
 import type { UserScore } from '@/lib/types'
 
@@ -15,6 +15,8 @@ interface LeaderboardClientProps {
   currentUserId?: string
   phase: string
   groupPredsClosed?: boolean
+  knockoutPredsClosed?: boolean
+  isAdmin?: boolean
 }
 
 const PHASE_LABELS: Record<string, string> = {
@@ -45,7 +47,7 @@ function AvatarDisplay({ avatarUrl, name, size = 10 }: { avatarUrl: string | nul
   )
 }
 
-export function LeaderboardClient({ scores: initialScores, currentUserId, phase, groupPredsClosed }: LeaderboardClientProps) {
+export function LeaderboardClient({ scores: initialScores, currentUserId, phase, groupPredsClosed, knockoutPredsClosed, isAdmin }: LeaderboardClientProps) {
   const [scores, setScores] = useState<UserScore[]>(initialScores)
   const [refreshing, setRefreshing] = useState(false)
   const [lastUpdate, setLastUpdate] = useState(new Date())
@@ -253,6 +255,57 @@ export function LeaderboardClient({ scores: initialScores, currentUserId, phase,
         <Badge variant="gold">Campeón: 40 pts</Badge>
         <Badge variant="blue">Premios: 25 pts c/u</Badge>
       </div>
+
+      {/* PDF downloads */}
+      {(isAdmin || groupPredsClosed || knockoutPredsClosed) && (
+        <div className="glass rounded-xl p-4 border border-blue-500/20 bg-blue-500/5 space-y-3">
+          <div className="flex items-center gap-2">
+            <FileDown size={15} className="text-blue-400" />
+            <p className="text-sm font-bold text-white">Documentos de transparencia</p>
+          </div>
+          <p className="text-xs text-gray-500">
+            Pronósticos sellados con la fecha de descarga. Sirven para verificar que no hay cambios a posteriori.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {(isAdmin || groupPredsClosed) ? (
+              <a
+                href="/api/pdf/grupos"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold bg-blue-500/15 text-blue-300 hover:bg-blue-500/25 border border-blue-500/30 transition-colors"
+              >
+                <FileDown size={14} />
+                Grupos y Premios (PDF)
+                {isAdmin && !groupPredsClosed && (
+                  <span className="text-xs text-blue-500 ml-1">[admin]</span>
+                )}
+              </a>
+            ) : (
+              <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-gray-600 border border-gray-800 cursor-not-allowed">
+                <Lock size={13} />
+                Grupos y Premios (PDF)
+                <span className="text-xs text-gray-700 ml-1">— plazo abierto</span>
+              </div>
+            )}
+            {(isAdmin || knockoutPredsClosed) ? (
+              <a
+                href="/api/pdf/eliminatorias"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold bg-blue-500/15 text-blue-300 hover:bg-blue-500/25 border border-blue-500/30 transition-colors"
+              >
+                <FileDown size={14} />
+                Eliminatorias (PDF)
+                {isAdmin && !knockoutPredsClosed && (
+                  <span className="text-xs text-blue-500 ml-1">[admin]</span>
+                )}
+              </a>
+            ) : (
+              <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-gray-600 border border-gray-800 cursor-not-allowed">
+                <Lock size={13} />
+                Eliminatorias (PDF)
+                <span className="text-xs text-gray-700 ml-1">— plazo abierto</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Table */}
       <LeaderboardTable scores={scores} currentUserId={currentUserId} linkable={groupPredsClosed} />
