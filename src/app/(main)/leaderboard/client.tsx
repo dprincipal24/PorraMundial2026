@@ -27,7 +27,7 @@ const PHASE_LABELS: Record<string, string> = {
 }
 
 function pot1st(n: number) { return Math.max(0, 8 * n - 10) }
-function pot2nd(n: number) { return Math.max(0, 2 * n + 6) }
+function pot2nd(n: number) { return Math.max(0, 2 * n) }
 const pot3rd = 10
 
 function AvatarDisplay({ avatarUrl, name, size = 10 }: { avatarUrl: string | null; name: string; size?: number }) {
