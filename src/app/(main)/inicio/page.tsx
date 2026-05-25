@@ -3,6 +3,7 @@ import { CountdownTimer } from '@/components/CountdownTimer'
 import { Star, BarChart2, Lock } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { MatchSchedule, type MatchData } from './MatchSchedule'
 
 const PHASE_CONFIG: Record<string, { label: string; emoji: string; desc: string; color: string }> = {
   registration:         { label: 'Registro abierto',               emoji: '📋', desc: 'Los participantes se están registrando',          color: 'text-blue-400' },
@@ -17,9 +18,17 @@ export default async function InicioPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [{ data: settings }, { data: scores }] = await Promise.all([
+  const [{ data: settings }, { data: scores }, { data: matchesRaw }] = await Promise.all([
     supabase.from('app_settings').select('key, value'),
     supabase.rpc('calculate_scores'),
+    supabase.from('matches').select(`
+      id, match_date, phase, group_name, status,
+      home_score, away_score,
+      home_placeholder, away_placeholder,
+      home_team:teams!matches_home_team_id_fkey(id, name, flag, iso),
+      away_team:teams!matches_away_team_id_fkey(id, name, flag, iso),
+      stadium:stadiums(name, city, country, country_flag)
+    `).order('match_date', { ascending: true }),
   ])
 
   const settingsMap = Object.fromEntries((settings ?? []).map((s: { key: string; value: string }) => [s.key, s.value]))
@@ -36,8 +45,35 @@ export default async function InicioPage() {
   const N = (scores ?? []).length
   const myScore = (scores ?? []).find((s: { user_id: string }) => s.user_id === user?.id)
 
+  // Group matches by Spain-timezone date (sv-SE locale gives YYYY-MM-DD format)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw = (matchesRaw ?? []) as any[]
+  const todayISO = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' })
+
+  const matchesByDate: Record<string, MatchData[]> = {}
+  for (const m of raw) {
+    const key = new Date(m.match_date).toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' })
+    const match: MatchData = {
+      id: m.id,
+      match_date: m.match_date,
+      phase: m.phase,
+      group_name: m.group_name,
+      status: m.status,
+      home_score: m.home_score,
+      away_score: m.away_score,
+      home_team: m.home_team ? { name: m.home_team.name, iso: m.home_team.iso ?? '' } : null,
+      away_team: m.away_team ? { name: m.away_team.name, iso: m.away_team.iso ?? '' } : null,
+      home_placeholder: m.home_placeholder,
+      away_placeholder: m.away_placeholder,
+      stadium: m.stadium ? { name: m.stadium.name, city: m.stadium.city, country_flag: m.stadium.country_flag ?? '' } : null,
+    }
+    if (!matchesByDate[key]) matchesByDate[key] = []
+    matchesByDate[key].push(match)
+  }
+  const allDates = Object.keys(matchesByDate).sort()
+
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+    <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
       {/* Hero */}
       <div className="text-center py-2">
         <div className="flex justify-center mb-2">
@@ -96,6 +132,9 @@ export default async function InicioPage() {
           </p>
         </Link>
       </div>
+
+      {/* Match schedule: today + date navigator */}
+      <MatchSchedule matchesByDate={matchesByDate} allDates={allDates} todayISO={todayISO} />
     </div>
   )
 }
