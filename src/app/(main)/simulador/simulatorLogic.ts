@@ -162,7 +162,8 @@ const THIRD_SLOT_ALLOWED: Record<number, string[]> = {
   87: ['D', 'E', 'I', 'J', 'L'],
 }
 
-// Greedy bipartite matching: most-constrained slot first, best available third assigned
+// Bipartite matching (augmenting paths) — greedy can strand valid thirds when
+// an early assignment blocks a later one from finding any eligible slot
 function assignThirdsToSlots(
   groupResults: Record<string, GroupResult>,
   bestThirds: string[],
@@ -173,21 +174,30 @@ function assignThirdsToSlots(
     if (third && bestThirds.includes(third)) thirdGroup[third] = g
   }
   const slots = Object.keys(THIRD_SLOT_ALLOWED).map(Number)
-  slots.sort((a, b) => {
-    const ea = bestThirds.filter(t => THIRD_SLOT_ALLOWED[a].includes(thirdGroup[t] ?? '')).length
-    const eb = bestThirds.filter(t => THIRD_SLOT_ALLOWED[b].includes(thirdGroup[t] ?? '')).length
-    return ea - eb
-  })
-  const assignment: Record<number, string | null> = {}
-  const used = new Set<string>()
-  for (const slot of slots) {
-    const pick = bestThirds.find(
-      t => !used.has(t) && THIRD_SLOT_ALLOWED[slot].includes(thirdGroup[t] ?? '')
-    ) ?? null
-    assignment[slot] = pick
-    if (pick) used.add(pick)
+  const slotOf: Record<number, string> = {}
+
+  function augment(team: string, visited: Set<number>): boolean {
+    const g = thirdGroup[team] ?? ''
+    for (const slot of slots) {
+      if (visited.has(slot) || !THIRD_SLOT_ALLOWED[slot].includes(g)) continue
+      visited.add(slot)
+      if (slotOf[slot] === undefined || augment(slotOf[slot], visited)) {
+        slotOf[slot] = team
+        return true
+      }
+    }
+    return false
   }
-  return assignment
+
+  for (const team of bestThirds) {
+    augment(team, new Set<number>())
+  }
+
+  const result: Record<number, string | null> = {}
+  for (const slot of slots) {
+    result[slot] = slotOf[slot] ?? null
+  }
+  return result
 }
 
 // Maps R32 match IDs to computed team IDs from group simulation (FIFA official bracket)
