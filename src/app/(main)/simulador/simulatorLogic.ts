@@ -150,44 +150,83 @@ export function getBestThirds(groupResults: Record<string, GroupResult>): string
   return thirds.slice(0, 8).map(t => t.teamId)
 }
 
-// Maps r32 match IDs to computed team IDs from group simulation
-// match 88 has a bug in seed data (groups M/N don't exist) — treated as 2 best thirds
+// FIFA Annex C: which groups are allowed to fill each third-place slot
+const THIRD_SLOT_ALLOWED: Record<number, string[]> = {
+  74: ['A', 'B', 'C', 'D', 'F'],
+  77: ['C', 'D', 'F', 'G', 'H'],
+  79: ['C', 'E', 'F', 'H', 'I'],
+  80: ['E', 'H', 'I', 'J', 'K'],
+  81: ['B', 'E', 'F', 'I', 'J'],
+  82: ['A', 'E', 'H', 'I', 'J'],
+  85: ['E', 'F', 'G', 'I', 'J'],
+  87: ['D', 'E', 'I', 'J', 'L'],
+}
+
+// Greedy bipartite matching: most-constrained slot first, best available third assigned
+function assignThirdsToSlots(
+  groupResults: Record<string, GroupResult>,
+  bestThirds: string[],
+): Record<number, string | null> {
+  const thirdGroup: Record<string, string> = {}
+  for (const g of GROUPS) {
+    const third = groupResults[g]?.third
+    if (third && bestThirds.includes(third)) thirdGroup[third] = g
+  }
+  const slots = Object.keys(THIRD_SLOT_ALLOWED).map(Number)
+  slots.sort((a, b) => {
+    const ea = bestThirds.filter(t => THIRD_SLOT_ALLOWED[a].includes(thirdGroup[t] ?? '')).length
+    const eb = bestThirds.filter(t => THIRD_SLOT_ALLOWED[b].includes(thirdGroup[t] ?? '')).length
+    return ea - eb
+  })
+  const assignment: Record<number, string | null> = {}
+  const used = new Set<string>()
+  for (const slot of slots) {
+    const pick = bestThirds.find(
+      t => !used.has(t) && THIRD_SLOT_ALLOWED[slot].includes(thirdGroup[t] ?? '')
+    ) ?? null
+    assignment[slot] = pick
+    if (pick) used.add(pick)
+  }
+  return assignment
+}
+
+// Maps R32 match IDs to computed team IDs from group simulation (FIFA official bracket)
 export function resolveR32Teams(
   groupResults: Record<string, GroupResult>,
   bestThirds: string[],
 ): Record<number, { home: string | null; away: string | null }> {
   const t = (g: string) => groupResults[g] ?? { first: null, second: null }
-  const thirds = bestThirds
+  const thirds = assignThirdsToSlots(groupResults, bestThirds)
   return {
-    73: { home: t('A').first, away: thirds[0] ?? null },
-    74: { home: t('B').first, away: thirds[1] ?? null },
-    75: { home: t('C').first, away: t('D').second },
-    76: { home: t('D').first, away: t('C').second },
-    77: { home: t('E').first, away: thirds[2] ?? null },
-    78: { home: t('F').first, away: thirds[3] ?? null },
-    79: { home: t('G').first, away: t('H').second },
-    80: { home: t('H').first, away: t('G').second },
-    81: { home: t('I').first, away: thirds[4] ?? null },
-    82: { home: t('J').first, away: thirds[5] ?? null },
-    83: { home: t('K').first, away: t('L').second },
-    84: { home: t('L').first, away: t('K').second },
-    85: { home: t('A').second, away: t('B').second },
-    86: { home: t('E').second, away: t('F').second },
-    87: { home: t('I').second, away: t('J').second },
-    88: { home: thirds[6] ?? null, away: thirds[7] ?? null },
+    73: { home: t('A').second, away: t('B').second },
+    74: { home: t('E').first,  away: thirds[74] ?? null },
+    75: { home: t('F').first,  away: t('C').second },
+    76: { home: t('C').first,  away: t('F').second },
+    77: { home: t('I').first,  away: thirds[77] ?? null },
+    78: { home: t('E').second, away: t('I').second },
+    79: { home: t('A').first,  away: thirds[79] ?? null },
+    80: { home: t('L').first,  away: thirds[80] ?? null },
+    81: { home: t('D').first,  away: thirds[81] ?? null },
+    82: { home: t('G').first,  away: thirds[82] ?? null },
+    83: { home: t('K').second, away: t('L').second },
+    84: { home: t('H').first,  away: t('J').second },
+    85: { home: t('B').first,  away: thirds[85] ?? null },
+    86: { home: t('J').first,  away: t('H').second },
+    87: { home: t('K').first,  away: thirds[87] ?? null },
+    88: { home: t('D').second, away: t('G').second },
   }
 }
 
 // For each knockout match, which two matches feed it (home/away)
 export const KNOCKOUT_FEED: Record<number, { homeFrom: number; awayFrom: number }> = {
-  89:  { homeFrom: 73, awayFrom: 74 },
-  90:  { homeFrom: 75, awayFrom: 76 },
-  91:  { homeFrom: 77, awayFrom: 78 },
+  89:  { homeFrom: 73, awayFrom: 75 },
+  90:  { homeFrom: 74, awayFrom: 77 },
+  91:  { homeFrom: 76, awayFrom: 78 },
   92:  { homeFrom: 79, awayFrom: 80 },
-  93:  { homeFrom: 81, awayFrom: 82 },
-  94:  { homeFrom: 83, awayFrom: 84 },
-  95:  { homeFrom: 85, awayFrom: 86 },
-  96:  { homeFrom: 87, awayFrom: 88 },
+  93:  { homeFrom: 83, awayFrom: 84 },
+  94:  { homeFrom: 81, awayFrom: 82 },
+  95:  { homeFrom: 86, awayFrom: 88 },
+  96:  { homeFrom: 85, awayFrom: 87 },
   97:  { homeFrom: 89, awayFrom: 90 },
   98:  { homeFrom: 91, awayFrom: 92 },
   99:  { homeFrom: 93, awayFrom: 94 },
