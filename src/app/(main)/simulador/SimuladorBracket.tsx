@@ -30,14 +30,14 @@ function matchY(matchIdx: number, round: number): number {
 // Left:  R32(0→7)=col0, R16(0→3)=col1, QF(0→1)=col2, SF(0)=col3
 // Center: Final=col4
 // Right: SF(0)=col5, QF(0→1)=col6, R16(0→3)=col7, R32(0→7)=col8
-const LEFT_R32  = [73,74,75,76,77,78,79,80]
+const LEFT_R32  = [73,75,74,77,76,78,79,80]   // pairs: 73+75→89, 74+77→90, 76+78→91, 79+80→92
 const LEFT_R16  = [89,90,91,92]
 const LEFT_QF   = [97,98]
 const LEFT_SF   = [101]
 const RIGHT_SF  = [102]
 const RIGHT_QF  = [99,100]
 const RIGHT_R16 = [93,94,95,96]
-const RIGHT_R32 = [81,82,83,84,85,86,87,88]
+const RIGHT_R32 = [83,84,81,82,86,88,85,87]   // pairs: 83+84→93, 81+82→94, 86+88→95, 85+87→96
 const FINAL     = [104]
 const THIRD     = [103]
 
