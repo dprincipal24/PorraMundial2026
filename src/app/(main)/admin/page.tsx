@@ -31,12 +31,28 @@ export default async function AdminPage() {
 
   const { data: profiles } = await supabase.from('profiles').select('*').order('created_at')
 
+  const adminGroupScores: Record<number, { home: number; away: number }> = {}
+  for (const m of (matches ?? [])) {
+    if (m.phase === 'groups' && m.status === 'finished' && m.home_score !== null && m.away_score !== null) {
+      adminGroupScores[m.id] = { home: m.home_score, away: m.away_score }
+    }
+  }
+
+  let initialBracketWinners: Record<number, string> = {}
+  try {
+    if (settingsMap['knockout_bracket']) {
+      initialBracketWinners = JSON.parse(settingsMap['knockout_bracket'])
+    }
+  } catch {}
+
   return (
     <AdminClient
       settings={settingsMap}
       teams={teams ?? []}
       matches={matches ?? []}
       profiles={profiles ?? []}
+      adminGroupScores={adminGroupScores}
+      initialBracketWinners={initialBracketWinners}
     />
   )
 }

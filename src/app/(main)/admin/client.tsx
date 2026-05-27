@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -9,13 +9,43 @@ import { cn, formatMatchDate } from '@/lib/utils'
 import { TeamFlag } from '@/components/TeamFlag'
 import {
   Settings, Users, Trophy, Star, Save, CheckCircle,
-  Building2, Crown, Database, Medal, KeyRound, X
+  Building2, Crown, Database, Medal, KeyRound, X, GitBranch,
 } from 'lucide-react'
 import { AWARDS, PLAYERS_BY_AWARD, type AwardType } from '@/lib/data/awards'
 import { PlayerSelect } from '@/components/PlayerSelect'
 import type { Match, Team, Profile } from '@/lib/types'
+import { SimuladorBracket } from '../simulador/SimuladorBracket'
+import type { ScoreMap, WinnerMap } from '../simulador/simulatorLogic'
 
-type AdminTab = 'phase' | 'results' | 'qualify' | 'awards' | 'users'
+type AdminTab = 'phase' | 'results' | 'qualify' | 'awards' | 'users' | 'bracket'
+
+const BRACKET_DOWNSTREAM: Record<number, { homeFrom: number; awayFrom: number }> = {
+  89: { homeFrom: 74, awayFrom: 77 }, 90: { homeFrom: 73, awayFrom: 75 },
+  91: { homeFrom: 76, awayFrom: 78 }, 92: { homeFrom: 79, awayFrom: 80 },
+  93: { homeFrom: 83, awayFrom: 84 }, 94: { homeFrom: 81, awayFrom: 82 },
+  95: { homeFrom: 86, awayFrom: 88 }, 96: { homeFrom: 85, awayFrom: 87 },
+  97: { homeFrom: 89, awayFrom: 90 }, 98: { homeFrom: 93, awayFrom: 94 },
+  99: { homeFrom: 91, awayFrom: 92 }, 100: { homeFrom: 95, awayFrom: 96 },
+  101: { homeFrom: 97, awayFrom: 98 }, 102: { homeFrom: 99, awayFrom: 100 },
+  103: { homeFrom: 101, awayFrom: 102 }, 104: { homeFrom: 101, awayFrom: 102 },
+}
+
+function bracketCascadeClear(matchId: number, winners: WinnerMap): WinnerMap {
+  const next = { ...winners }
+  function recurse(mid: number) {
+    for (const [mStr, feed] of Object.entries(BRACKET_DOWNSTREAM)) {
+      const downstream = parseInt(mStr)
+      if (feed.homeFrom === mid || feed.awayFrom === mid) {
+        if (next[downstream] !== undefined) {
+          delete next[downstream]
+          recurse(downstream)
+        }
+      }
+    }
+  }
+  recurse(matchId)
+  return next
+}
 
 const PHASE_OPTIONS = [
   { value: 'registration',         label: 'Registro abierto',               desc: 'Sólo se pueden crear cuentas' },
@@ -31,9 +61,11 @@ interface AdminClientProps {
   teams: Team[]
   matches: Match[]
   profiles: Profile[]
+  adminGroupScores: ScoreMap
+  initialBracketWinners: WinnerMap
 }
 
-export function AdminClient({ settings: initialSettings, teams, matches, profiles }: AdminClientProps) {
+export function AdminClient({ settings: initialSettings, teams, matches, profiles, adminGroupScores, initialBracketWinners }: AdminClientProps) {
   const router = useRouter()
   const [tab, setTab] = useState<AdminTab>('phase')
   const [settings, setSettings] = useState(initialSettings)
@@ -69,6 +101,9 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
     }
     return m
   })
+
+  const [bracketWinners, setBracketWinners] = useState<WinnerMap>(initialBracketWinners)
+  const [bracketSaving, setBracketSaving] = useState(false)
 
   const supabase = createClient()
 
@@ -162,6 +197,49 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
     router.refresh()
   }
 
+  const handleBracketPickWinner = useCallback(async (matchId: number, teamId: string) => {
+    setBracketWinners(prev => {
+      const cleared = bracketCascadeClear(matchId, prev)
+      return { ...cleared, [matchId]: teamId }
+    })
+    setBracketSaving(true)
+    const res = await fetch('/api/admin/bracket', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ matchId, winnerId: teamId }),
+    })
+    const data = await res.json()
+    if (res.ok) {
+      setBracketWinners(data.bracket as WinnerMap)
+      setSaved('Ganador guardado')
+      setTimeout(() => setSaved(''), 2000)
+    } else {
+      setSaved(`Error: ${data.error ?? 'desconocido'}`)
+      router.refresh()
+    }
+    setBracketSaving(false)
+  }, [router])
+
+  const handleBracketClearWinner = useCallback(async (matchId: number) => {
+    setBracketWinners(prev => {
+      const { [matchId]: _, ...rest } = prev
+      return bracketCascadeClear(matchId, rest as WinnerMap)
+    })
+    setBracketSaving(true)
+    const res = await fetch('/api/admin/bracket', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ matchId, winnerId: null }),
+    })
+    const data = await res.json()
+    if (res.ok) {
+      setBracketWinners(data.bracket as WinnerMap)
+    } else {
+      router.refresh()
+    }
+    setBracketSaving(false)
+  }, [router])
+
   const filteredMatches = matches.filter((m) =>
     selectedPhase === 'groups' ? m.phase === 'groups' : m.phase !== 'groups',
   )
@@ -191,6 +269,7 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
           { key: 'phase',   label: 'Fase',            icon: Star },
           { key: 'results', label: 'Resultados',       icon: Trophy },
           { key: 'qualify', label: 'Clasificaciones',  icon: Crown },
+          { key: 'bracket', label: 'Bracket',          icon: GitBranch },
           { key: 'awards',  label: 'Premios',          icon: Medal },
           { key: 'users',   label: 'Usuarios',         icon: Users },
         ].map(({ key, label, icon: Icon }) => (
@@ -490,6 +569,34 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* ─── TAB: BRACKET ─── */}
+      {tab === 'bracket' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h2 className="font-bold text-white flex items-center gap-2">
+                <GitBranch size={16} className="text-purple-400" />
+                Bracket eliminatorio
+              </h2>
+              <p className="text-xs text-gray-500 mt-1">
+                Haz clic en un equipo para establecerlo como ganador. Esto bloquea la casilla en el simulador y actualiza las clasificaciones automáticamente.
+              </p>
+            </div>
+            {bracketSaving && (
+              <span className="text-xs text-purple-400 animate-pulse">Guardando…</span>
+            )}
+          </div>
+          <SimuladorBracket
+            matches={matches}
+            simScores={adminGroupScores}
+            winners={bracketWinners}
+            lockedMatchIds={new Set()}
+            onPickWinner={handleBracketPickWinner}
+            onClearWinner={handleBracketClearWinner}
+          />
         </div>
       )}
 
