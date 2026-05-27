@@ -508,14 +508,14 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
       {tab === 'qualify' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-bold text-white">Gestión de clasificaciones</h2>
+            <h2 className="font-bold text-white">Clasificados de grupos</h2>
             <Button onClick={saveQualifications} disabled={saving} variant="secondary">
               <Save size={14} />
               Guardar todo
             </Button>
           </div>
           <p className="text-xs text-gray-500">
-            Marca qué equipos han pasado a cada ronda. Esto actualiza la puntuación de todos automáticamente.
+            Marca los 32 equipos que pasan de la fase de grupos. Da 5 puntos a quien los acertó. Las fases eliminatorias se gestionan en la pestaña Bracket.
           </p>
 
           <div className="overflow-x-auto">
@@ -523,12 +523,7 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
               <thead>
                 <tr className="border-b border-gray-800">
                   <th className="text-left py-3 px-3 text-gray-500 font-semibold text-xs">Equipo</th>
-                  <th className="text-center py-3 px-2 text-gray-500 font-semibold text-xs">Clasif.</th>
-                  <th className="text-center py-3 px-2 text-gray-500 font-semibold text-xs">Octavos</th>
-                  <th className="text-center py-3 px-2 text-gray-500 font-semibold text-xs">Cuartos</th>
-                  <th className="text-center py-3 px-2 text-gray-500 font-semibold text-xs">Semis</th>
-                  <th className="text-center py-3 px-2 text-gray-500 font-semibold text-xs">Final</th>
-                  <th className="text-center py-3 px-2 text-amber-500 font-semibold text-xs">🏆</th>
+                  <th className="text-center py-3 px-2 text-gray-500 font-semibold text-xs">Clasificado</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800/50">
@@ -548,21 +543,19 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
                           </div>
                         </div>
                       </td>
-                      {(['qualified', 'r16', 'qf', 'sf', 'final', 'champion'] as const).map((field) => (
-                        <td key={field} className="text-center py-2 px-2">
-                          <input
-                            type="checkbox"
-                            checked={vals[field] ?? false}
-                            onChange={(e) =>
-                              setQualifyMap((prev) => ({
-                                ...prev,
-                                [team.id]: { ...prev[team.id], [field]: e.target.checked },
-                              }))
-                            }
-                            className="accent-amber-500 w-4 h-4 cursor-pointer"
-                          />
-                        </td>
-                      ))}
+                      <td className="text-center py-2 px-2">
+                        <input
+                          type="checkbox"
+                          checked={vals.qualified ?? false}
+                          onChange={(e) =>
+                            setQualifyMap((prev) => ({
+                              ...prev,
+                              [team.id]: { ...prev[team.id], qualified: e.target.checked },
+                            }))
+                          }
+                          className="accent-amber-500 w-4 h-4 cursor-pointer"
+                        />
+                      </td>
                     </tr>
                   )
                 })}
