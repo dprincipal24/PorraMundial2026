@@ -23,12 +23,12 @@ interface Props {
 }
 
 const DOWNSTREAM: Record<number, { homeFrom: number; awayFrom: number }> = {
-  89: { homeFrom: 73, awayFrom: 75 }, 90: { homeFrom: 74, awayFrom: 77 },
+  89: { homeFrom: 74, awayFrom: 77 }, 90: { homeFrom: 73, awayFrom: 75 },
   91: { homeFrom: 76, awayFrom: 78 }, 92: { homeFrom: 79, awayFrom: 80 },
   93: { homeFrom: 83, awayFrom: 84 }, 94: { homeFrom: 81, awayFrom: 82 },
   95: { homeFrom: 86, awayFrom: 88 }, 96: { homeFrom: 85, awayFrom: 87 },
-  97: { homeFrom: 89, awayFrom: 90 }, 98: { homeFrom: 91, awayFrom: 92 },
-  99: { homeFrom: 93, awayFrom: 94 }, 100: { homeFrom: 95, awayFrom: 96 },
+  97: { homeFrom: 89, awayFrom: 90 }, 98: { homeFrom: 93, awayFrom: 94 },
+  99: { homeFrom: 91, awayFrom: 92 }, 100: { homeFrom: 95, awayFrom: 96 },
   101: { homeFrom: 97, awayFrom: 98 }, 102: { homeFrom: 99, awayFrom: 100 },
   103: { homeFrom: 101, awayFrom: 102 }, 104: { homeFrom: 101, awayFrom: 102 },
 }
