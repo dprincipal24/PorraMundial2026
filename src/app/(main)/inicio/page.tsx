@@ -18,7 +18,7 @@ export default async function InicioPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [{ data: settings }, { data: scores }, { data: matchesRaw }] = await Promise.all([
+  const [{ data: settings }, { data: scores }, { data: matchesRaw }, { data: predictionsRaw }] = await Promise.all([
     supabase.from('app_settings').select('key, value'),
     supabase.rpc('calculate_scores'),
     supabase.from('matches').select(`
@@ -29,6 +29,9 @@ export default async function InicioPage() {
       away_team:teams!matches_away_team_id_fkey(id, name, flag, iso),
       stadium:stadiums(name, city, country, country_flag)
     `).order('match_date', { ascending: true }),
+    user
+      ? supabase.from('match_predictions').select('match_id, home_score, away_score').eq('user_id', user.id)
+      : Promise.resolve({ data: [] }),
   ])
 
   const settingsMap = Object.fromEntries((settings ?? []).map((s: { key: string; value: string }) => [s.key, s.value]))
@@ -71,6 +74,11 @@ export default async function InicioPage() {
     matchesByDate[key].push(match)
   }
   const allDates = Object.keys(matchesByDate).sort()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userPredictions: Record<number, { home_score: number; away_score: number }> = Object.fromEntries(
+    (predictionsRaw ?? []).map((p: any) => [p.match_id, { home_score: p.home_score, away_score: p.away_score }])
+  )
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
@@ -134,7 +142,7 @@ export default async function InicioPage() {
       </div>
 
       {/* Match schedule: today + date navigator */}
-      <MatchSchedule matchesByDate={matchesByDate} allDates={allDates} todayISO={todayISO} />
+      <MatchSchedule matchesByDate={matchesByDate} allDates={allDates} todayISO={todayISO} userPredictions={userPredictions} />
     </div>
   )
 }
