@@ -5,9 +5,9 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { TeamFlag } from '@/components/TeamFlag'
-import { PlayerSelect } from '@/components/PlayerSelect'
+import { PlayerAccordion } from '@/components/PlayerAccordion'
 import { cn } from '@/lib/utils'
-import { AWARDS, PLAYERS_BY_AWARD, type AwardType } from '@/lib/data/awards'
+import { AWARDS, PLAYERS_BY_AWARD, TEAMS_BY_AWARD, type AwardType } from '@/lib/data/awards'
 import { CountdownTimer } from '@/components/CountdownTimer'
 import { Save, Lock, CheckCircle, XCircle, Medal, AlertTriangle, Users } from 'lucide-react'
 
@@ -190,8 +190,8 @@ export function AwardPredictionsClient({
                 )}
 
                 {isOpen ? (
-                  <PlayerSelect
-                    players={players}
+                  <PlayerAccordion
+                    teams={TEAMS_BY_AWARD[award.type as AwardType]}
                     value={myPick}
                     onChange={(name) => setPredMap(prev => ({ ...prev, [award.type as AwardType]: name }))}
                   />

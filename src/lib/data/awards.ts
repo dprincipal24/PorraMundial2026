@@ -1,103 +1,51 @@
-// ─── Lista por premio: cada uno tiene su propio conjunto de candidatos ───────
+import { ALL_TEAMS, type Position } from './squads'
 
 export type AwardType = 'golden_ball' | 'golden_boot' | 'golden_glove' | 'best_young'
 
 export interface AwardPlayer {
   name: string
   country: string
-  iso: string  // código para TeamFlag (flagcdn.com)
+  iso: string
+  position: Position
+  dob: string
 }
 
-/** Balón de Oro – mejor jugador del torneo */
-export const GOLDEN_BALL_PLAYERS: AwardPlayer[] = [
-  { name: 'Kylian Mbappé',       country: 'Francia',    iso: 'fr' },
-  { name: 'Lamine Yamal',        country: 'España',     iso: 'es' },
-  { name: 'Harry Kane',          country: 'Inglaterra', iso: 'gb-eng' },
-  { name: 'Lionel Messi',        country: 'Argentina',  iso: 'ar' },
-  { name: 'Jude Bellingham',     country: 'Inglaterra', iso: 'gb-eng' },
-  { name: 'Vinicius Jr',         country: 'Brasil',     iso: 'br' },
-  { name: 'Rodri',               country: 'España',     iso: 'es' },
-  { name: 'Phil Foden',          country: 'Inglaterra', iso: 'gb-eng' },
-  { name: 'Florian Wirtz',       country: 'Alemania',   iso: 'de' },
-  { name: 'Antoine Griezmann',   country: 'Francia',    iso: 'fr' },
-  { name: 'Cristiano Ronaldo',   country: 'Portugal',   iso: 'pt' },
-  { name: 'Michael Olise',       country: 'Francia',    iso: 'fr' },
-  { name: 'Bukayo Saka',         country: 'Inglaterra', iso: 'gb-eng' },
-  { name: 'Rafael Leão',         country: 'Portugal',   iso: 'pt' },
-  { name: 'Ousmane Dembélé',    country: 'Francia',    iso: 'fr' },
-  { name: 'Jamal Musiala',       country: 'Alemania',   iso: 'de' },
-  { name: 'Pedri',               country: 'España',     iso: 'es' },
-  { name: 'Arda Güler',          country: 'Turquía',    iso: 'tr' },
-  { name: 'Alejandro Garnacho',  country: 'Argentina',  iso: 'ar' },
-  { name: 'Rodrygo',             country: 'Brasil',     iso: 'br' },
-]
+export interface TeamForAward {
+  name: string
+  iso: string
+  players: AwardPlayer[]
+}
 
-/** Bota de Oro – máximo goleador */
-export const GOLDEN_BOOT_PLAYERS: AwardPlayer[] = [
-  { name: 'Kylian Mbappé',       country: 'Francia',    iso: 'fr' },
-  { name: 'Harry Kane',          country: 'Inglaterra', iso: 'gb-eng' },
-  { name: 'Lionel Messi',        country: 'Argentina',  iso: 'ar' },
-  { name: 'Vinicius Jr',         country: 'Brasil',     iso: 'br' },
-  { name: 'Cristiano Ronaldo',   country: 'Portugal',   iso: 'pt' },
-  { name: 'Michael Olise',       country: 'Francia',    iso: 'fr' },
-  { name: 'Lamine Yamal',        country: 'España',     iso: 'es' },
-  { name: 'Antoine Griezmann',   country: 'Francia',    iso: 'fr' },
-  { name: 'Bukayo Saka',         country: 'Inglaterra', iso: 'gb-eng' },
-  { name: 'Endrick',             country: 'Brasil',     iso: 'br' },
-  { name: 'Alejandro Garnacho',  country: 'Argentina',  iso: 'ar' },
-  { name: 'Phil Foden',          country: 'Inglaterra', iso: 'gb-eng' },
-  { name: 'Rafael Leão',         country: 'Portugal',   iso: 'pt' },
-  { name: 'Rodrygo',             country: 'Brasil',     iso: 'br' },
-  { name: 'Ousmane Dembélé',    country: 'Francia',    iso: 'fr' },
-  { name: 'Arda Güler',          country: 'Turquía',    iso: 'tr' },
-  { name: 'Estêvão',             country: 'Brasil',     iso: 'br' },
-  { name: 'Jude Bellingham',     country: 'Inglaterra', iso: 'gb-eng' },
-  { name: 'Dušan Vlahović',      country: 'Serbia',     iso: 'rs' },
-  { name: 'Jamal Musiala',       country: 'Alemania',   iso: 'de' },
-]
+// Jóvenes: nacidos el 2 de enero de 2004 o después (≤21 años al 1 ene 2026)
+const YOUNG_CUTOFF = '2004-01-02'
 
-/** Guante de Oro – mejor portero (solo porteros) */
-export const GOLDEN_GLOVE_PLAYERS: AwardPlayer[] = [
-  { name: 'Emiliano Martínez',  country: 'Argentina', iso: 'ar' },
-  { name: 'Thibaut Courtois',    country: 'Bélgica',   iso: 'be' },
-  { name: 'Mike Maignan',        country: 'Francia',   iso: 'fr' },
-  { name: 'Alisson Becker',      country: 'Brasil',    iso: 'br' },
-  { name: 'Unai Simón',          country: 'España',    iso: 'es' },
-  { name: 'Jordan Pickford',     country: 'Inglaterra',iso: 'gb-eng' },
-  { name: 'Diogo Costa',         country: 'Portugal',  iso: 'pt' },
-  { name: 'Gregor Kobel',        country: 'Suiza',     iso: 'ch' },
-  { name: 'Oliver Baumann',      country: 'Alemania',  iso: 'de' },
-  { name: 'David Raya',          country: 'España',    iso: 'es' },
-  { name: 'Yann Sommer',         country: 'Suiza',     iso: 'ch' },
-  { name: 'Andriy Lunin',        country: 'Ucrania',   iso: 'ua' },
-]
+function buildTeams(posFilter?: Position[], youngOnly = false): TeamForAward[] {
+  return ALL_TEAMS
+    .map(team => ({
+      name: team.name,
+      iso: team.iso,
+      players: team.players
+        .filter(p => !posFilter || posFilter.includes(p.position))
+        .filter(p => !youngOnly || p.dob >= YOUNG_CUTOFF)
+        .map(p => ({ name: p.name, country: team.name, iso: team.iso, position: p.position, dob: p.dob })),
+    }))
+    .filter(t => t.players.length > 0)
+    .sort((a, b) => a.name.localeCompare(b.name, 'es'))
+}
 
-/**
- * Mejor Jugador Joven – elegible si tiene ≤21 años el 1 de enero de 2026
- * (nacido a partir del 2 de enero de 2004)
- */
-export const BEST_YOUNG_PLAYERS: AwardPlayer[] = [
-  { name: 'Lamine Yamal',         country: 'España',     iso: 'es' },     // n. jul 2007
-  { name: 'Pau Cubarsí',          country: 'España',     iso: 'es' },     // n. ene 2007
-  { name: 'Estêvão',              country: 'Brasil',     iso: 'br' },     // n. abr 2007
-  { name: 'Endrick',              country: 'Brasil',     iso: 'br' },     // n. jul 2006
-  { name: 'Warren Zaïre-Emery',  country: 'Francia',    iso: 'fr' },     // n. mar 2006
-  { name: 'Kobbie Mainoo',        country: 'Inglaterra', iso: 'gb-eng' }, // n. abr 2005
-  { name: 'Désiré Doué',          country: 'Francia',    iso: 'fr' },     // n. jun 2005
-  { name: 'Arda Güler',           country: 'Turquía',    iso: 'tr' },     // n. feb 2005
-  { name: 'Mathys Tel',           country: 'Francia',    iso: 'fr' },     // n. abr 2005
-  { name: 'João Neves',           country: 'Portugal',   iso: 'pt' },     // n. jun 2004
-  { name: 'Gavi',                 country: 'España',     iso: 'es' },     // n. feb 2004
-  { name: 'Alejandro Garnacho',   country: 'Argentina',  iso: 'ar' },     // n. jul 2004
-  { name: 'Sávio',                country: 'Brasil',     iso: 'br' },     // n. sep 2004
-]
+export const TEAMS_BY_AWARD: Record<AwardType, TeamForAward[]> = {
+  golden_ball:  buildTeams(),
+  golden_boot:  buildTeams(['MID', 'FWD']),
+  golden_glove: buildTeams(['GK']),
+  best_young:   buildTeams(undefined, true),
+}
 
-/** Mapa de cada premio a su lista de jugadores */
+/** Lista plana de jugadores por premio (para búsquedas y panel de admin) */
 export const PLAYERS_BY_AWARD: Record<AwardType, AwardPlayer[]> = {
-  golden_ball:  GOLDEN_BALL_PLAYERS,
-  golden_boot:  GOLDEN_BOOT_PLAYERS,
-  golden_glove: GOLDEN_GLOVE_PLAYERS,
-  best_young:   BEST_YOUNG_PLAYERS,
+  golden_ball:  TEAMS_BY_AWARD.golden_ball.flatMap(t => t.players),
+  golden_boot:  TEAMS_BY_AWARD.golden_boot.flatMap(t => t.players),
+  golden_glove: TEAMS_BY_AWARD.golden_glove.flatMap(t => t.players),
+  best_young:   TEAMS_BY_AWARD.best_young.flatMap(t => t.players),
 }
 
 export const AWARDS = [
