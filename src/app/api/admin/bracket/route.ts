@@ -100,17 +100,27 @@ export async function POST(request: Request) {
   const { data: allTeams } = await supabase.from('teams').select('id')
 
   if (allTeams && allTeams.length > 0) {
-    await supabase.from('teams').upsert(
-      allTeams.map((t: { id: string }) => ({
-        id: t.id,
-        reached_r16:   r16Teams.has(t.id),
-        reached_qf:    qfTeams.has(t.id),
-        reached_sf:    sfTeams.has(t.id),
-        reached_final: finalTeams.has(t.id),
-        is_champion:   champion === t.id,
-      })),
-      { onConflict: 'id' },
-    )
+    const allIds = allTeams.map((t: { id: string }) => t.id)
+
+    // Reset all knockout flags, then set true for teams that advanced each round.
+    // update() is used instead of upsert() to avoid NOT NULL violations on other columns.
+    const { error: resetErr } = await supabase
+      .from('teams')
+      .update({ reached_r16: false, reached_qf: false, reached_sf: false, reached_final: false, is_champion: false })
+      .in('id', allIds)
+
+    if (resetErr) return NextResponse.json({ error: resetErr.message }, { status: 500 })
+
+    if (r16Teams.size > 0)
+      await supabase.from('teams').update({ reached_r16: true }).in('id', [...r16Teams])
+    if (qfTeams.size > 0)
+      await supabase.from('teams').update({ reached_qf: true }).in('id', [...qfTeams])
+    if (sfTeams.size > 0)
+      await supabase.from('teams').update({ reached_sf: true }).in('id', [...sfTeams])
+    if (finalTeams.size > 0)
+      await supabase.from('teams').update({ reached_final: true }).in('id', [...finalTeams])
+    if (champion)
+      await supabase.from('teams').update({ is_champion: true }).eq('id', champion)
   }
 
   return NextResponse.json({ ok: true, bracket })
