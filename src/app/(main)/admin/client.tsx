@@ -11,8 +11,8 @@ import {
   Settings, Users, Trophy, Star, Save, CheckCircle,
   Building2, Crown, Database, Medal, KeyRound, X, GitBranch,
 } from 'lucide-react'
-import { AWARDS, PLAYERS_BY_AWARD, type AwardType } from '@/lib/data/awards'
-import { PlayerSelect } from '@/components/PlayerSelect'
+import { AWARDS, TEAMS_BY_AWARD, type AwardType } from '@/lib/data/awards'
+import { PlayerAccordion } from '@/components/PlayerAccordion'
 import type { Match, Team, Profile } from '@/lib/types'
 import { SimuladorBracket } from '../simulador/SimuladorBracket'
 import type { ScoreMap, WinnerMap } from '../simulador/simulatorLogic'
@@ -614,8 +614,8 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
                 </div>
                 <div className="flex gap-2">
                   <div className="flex-1">
-                    <PlayerSelect
-                      players={PLAYERS_BY_AWARD[award.type as AwardType]}
+                    <PlayerAccordion
+                      teams={TEAMS_BY_AWARD[award.type as AwardType]}
                       value={settings[award.settingKey] ?? ''}
                       onChange={(name) => setSettings(prev => ({ ...prev, [award.settingKey]: name }))}
                       placeholder="— Sin ganador todavía —"
