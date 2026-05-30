@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -19,7 +20,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No puedes banearte a ti mismo' }, { status: 400 })
   }
 
-  const { error } = await supabase.from('profiles').update({ is_banned: banned }).eq('id', userId)
+  const adminClient = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+
+  const { error } = await adminClient.from('profiles').update({ is_banned: banned }).eq('id', userId)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   return NextResponse.json({ ok: true })
