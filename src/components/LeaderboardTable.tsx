@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { Trophy, Medal } from 'lucide-react'
+import { Trophy, Medal, BadgeCheck } from 'lucide-react'
 import type { UserScore } from '@/lib/types'
 import type { KnockoutBreakdown } from '@/app/(main)/leaderboard/page'
 
@@ -94,17 +94,19 @@ export function LeaderboardTable({ scores, currentUserId, linkable, knockoutBrea
                         <Link
                           href={`/predictions/groups?view=${score.user_id}`}
                           className={cn(
-                            'text-sm font-semibold truncate block hover:underline underline-offset-2',
+                            'text-sm font-semibold truncate flex items-center gap-1 hover:underline underline-offset-2',
                             isMe ? 'text-amber-400' : 'text-white',
                           )}
                         >
                           {score.name}
-                          {isMe && <span className="ml-1 text-xs text-amber-500">(tú)</span>}
+                          {score.has_paid && <BadgeCheck size={14} className="text-blue-400 flex-shrink-0" />}
+                          {isMe && <span className="text-xs text-amber-500">(tú)</span>}
                         </Link>
                       ) : (
-                        <p className={cn('text-sm font-semibold truncate', isMe ? 'text-amber-400' : 'text-white')}>
+                        <p className={cn('text-sm font-semibold truncate flex items-center gap-1', isMe ? 'text-amber-400' : 'text-white')}>
                           {score.name}
-                          {isMe && <span className="ml-1 text-xs text-amber-500">(tú)</span>}
+                          {score.has_paid && <BadgeCheck size={14} className="text-blue-400 flex-shrink-0" />}
+                          {isMe && <span className="text-xs text-amber-500">(tú)</span>}
                         </p>
                       )}
                     </div>

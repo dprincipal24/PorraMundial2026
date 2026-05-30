@@ -84,6 +84,7 @@ export interface Profile {
   avatar_url: string | null
   is_admin: boolean
   is_banned: boolean
+  has_paid: boolean
   created_at: string
 }
 
@@ -104,6 +105,7 @@ export interface UserScore {
   knockout_points: number
   award_points: number
   total_points: number
+  has_paid: boolean
   position: number
 }
 

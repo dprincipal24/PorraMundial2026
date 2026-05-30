@@ -10,7 +10,7 @@ import { TeamFlag } from '@/components/TeamFlag'
 import {
   Settings, Users, Trophy, Star, Save, CheckCircle,
   Building2, Crown, Database, Medal, KeyRound, X, GitBranch,
-  Ban, Trash2, AlertTriangle,
+  Ban, Trash2, AlertTriangle, BadgeCheck, CreditCard,
 } from 'lucide-react'
 import { AWARDS, TEAMS_BY_AWARD, type AwardType } from '@/lib/data/awards'
 import { PlayerAccordion } from '@/components/PlayerAccordion'
@@ -18,7 +18,7 @@ import type { Match, Team, Profile } from '@/lib/types'
 import { SimuladorBracket } from '../simulador/SimuladorBracket'
 import type { ScoreMap, WinnerMap } from '../simulador/simulatorLogic'
 
-type AdminTab = 'phase' | 'results' | 'qualify' | 'awards' | 'users' | 'bracket'
+type AdminTab = 'phase' | 'results' | 'qualify' | 'awards' | 'users' | 'bracket' | 'payments'
 
 const BRACKET_DOWNSTREAM: Record<number, { homeFrom: number; awayFrom: number }> = {
   89: { homeFrom: 74, awayFrom: 77 }, 90: { homeFrom: 73, awayFrom: 75 },
@@ -171,6 +171,18 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
   const [deletingUser, setDeletingUser] = useState<string | null>(null)
   const [deleteMsg, setDeleteMsg] = useState<{ id: string; ok: boolean; text: string } | null>(null)
   const [banningUser, setBanningUser] = useState<string | null>(null)
+  const [togglingPaid, setTogglingPaid] = useState<string | null>(null)
+
+  async function handleMarkPaid(userId: string, paid: boolean) {
+    setTogglingPaid(userId)
+    await fetch('/api/admin/mark-paid', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, paid }),
+    })
+    setTogglingPaid(null)
+    router.refresh()
+  }
 
   async function handleBanUser(userId: string, banned: boolean) {
     setBanningUser(userId)
@@ -310,8 +322,9 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
           { key: 'results', label: 'Resultados',       icon: Trophy },
           { key: 'qualify', label: 'Clasificaciones',  icon: Crown },
           { key: 'bracket', label: 'Bracket',          icon: GitBranch },
-          { key: 'awards',  label: 'Premios',          icon: Medal },
-          { key: 'users',   label: 'Usuarios',         icon: Users },
+          { key: 'awards',    label: 'Premios',          icon: Medal },
+          { key: 'payments',  label: 'Pagos',            icon: CreditCard },
+          { key: 'users',     label: 'Usuarios',         icon: Users },
         ].map(({ key, label, icon: Icon }) => (
           <button
             key={key}
@@ -672,6 +685,75 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
                   </Button>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── TAB: PAGOS ─── */}
+      {tab === 'payments' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-bold text-white flex items-center gap-2">
+                <CreditCard size={16} className="text-blue-400" />
+                Control de pagos
+              </h2>
+              <p className="text-xs text-gray-500 mt-1">
+                Los usuarios marcados como pagados aparecen con el verificado azul en la clasificación.
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-black text-blue-400">
+                {profiles.filter(p => p.has_paid).length}
+                <span className="text-base font-normal text-gray-500">/{profiles.length}</span>
+              </p>
+              <p className="text-xs text-gray-500">han pagado</p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {profiles.map((profile) => (
+              <button
+                key={profile.id}
+                disabled={togglingPaid === profile.id}
+                onClick={() => handleMarkPaid(profile.id, !profile.has_paid)}
+                className={cn(
+                  'w-full glass rounded-xl border p-4 flex items-center justify-between gap-3 transition-all cursor-pointer text-left',
+                  profile.has_paid
+                    ? 'border-blue-500/40 bg-blue-500/5 hover:bg-blue-500/10'
+                    : 'border-gray-800 hover:border-gray-600',
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    'w-9 h-9 rounded-full flex items-center justify-center text-sm font-black text-white',
+                    profile.has_paid
+                      ? 'bg-gradient-to-br from-blue-500 to-blue-700'
+                      : 'bg-gradient-to-br from-amber-500 to-orange-600',
+                  )}>
+                    {profile.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-white text-sm flex items-center gap-1.5">
+                      {profile.name}
+                      {profile.has_paid && <BadgeCheck size={14} className="text-blue-400" />}
+                    </p>
+                    <p className="text-xs text-gray-500">{new Date(profile.created_at).toLocaleDateString('es-ES')}</p>
+                  </div>
+                </div>
+
+                <div className={cn(
+                  'w-12 h-6 rounded-full relative transition-colors flex-shrink-0',
+                  profile.has_paid ? 'bg-blue-500' : 'bg-gray-700',
+                  togglingPaid === profile.id && 'opacity-50',
+                )}>
+                  <span className={cn(
+                    'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all',
+                    profile.has_paid ? 'left-6' : 'left-0.5',
+                  )} />
+                </div>
+              </button>
             ))}
           </div>
         </div>
