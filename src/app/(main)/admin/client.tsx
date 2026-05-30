@@ -10,6 +10,7 @@ import { TeamFlag } from '@/components/TeamFlag'
 import {
   Settings, Users, Trophy, Star, Save, CheckCircle,
   Building2, Crown, Database, Medal, KeyRound, X, GitBranch,
+  Ban, Trash2, AlertTriangle,
 } from 'lucide-react'
 import { AWARDS, TEAMS_BY_AWARD, type AwardType } from '@/lib/data/awards'
 import { PlayerAccordion } from '@/components/PlayerAccordion'
@@ -166,6 +167,45 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
   const [resetingUser, setResetingUser] = useState<string | null>(null)
   const [newPassword, setNewPassword] = useState('')
   const [resetMsg, setResetMsg] = useState<{ id: string; ok: boolean; text: string } | null>(null)
+
+  const [deletingUser, setDeletingUser] = useState<string | null>(null)
+  const [deleteMsg, setDeleteMsg] = useState<{ id: string; ok: boolean; text: string } | null>(null)
+  const [banningUser, setBanningUser] = useState<string | null>(null)
+
+  async function handleBanUser(userId: string, banned: boolean) {
+    setBanningUser(userId)
+    const res = await fetch('/api/admin/ban-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, banned }),
+    })
+    if (res.ok) {
+      setResetMsg({ id: userId, ok: true, text: banned ? 'Usuario baneado' : 'Baneo eliminado' })
+    } else {
+      const data = await res.json()
+      setResetMsg({ id: userId, ok: false, text: data.error ?? 'Error' })
+    }
+    setBanningUser(null)
+    setTimeout(() => setResetMsg(null), 3000)
+    router.refresh()
+  }
+
+  async function handleDeleteUser(userId: string) {
+    const res = await fetch('/api/admin/delete-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    })
+    const data = await res.json()
+    if (res.ok) {
+      setDeleteMsg({ id: userId, ok: true, text: 'Usuario eliminado' })
+      setDeletingUser(null)
+    } else {
+      setDeleteMsg({ id: userId, ok: false, text: data.error ?? 'Error' })
+    }
+    setTimeout(() => setDeleteMsg(null), 3000)
+    router.refresh()
+  }
 
   async function handleResetPassword(userId: string) {
     const res = await fetch('/api/admin/reset-password', {
@@ -643,29 +683,48 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
           <h2 className="font-bold text-white">{profiles.length} participantes registrados</h2>
           <div className="space-y-2">
             {profiles.map((profile) => (
-              <div key={profile.id} className="glass rounded-xl border border-gray-800 overflow-hidden">
-                <div className="p-4 flex items-center justify-between gap-3">
+              <div
+                key={profile.id}
+                className={cn(
+                  'glass rounded-xl border overflow-hidden',
+                  profile.is_banned ? 'border-orange-500/30 bg-orange-500/5' : 'border-gray-800',
+                )}
+              >
+                <div className="p-4 flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-sm font-black text-white">
+                    <div className={cn(
+                      'w-9 h-9 rounded-full flex items-center justify-center text-sm font-black text-white',
+                      profile.is_banned
+                        ? 'bg-gradient-to-br from-gray-600 to-gray-700'
+                        : 'bg-gradient-to-br from-amber-500 to-orange-600',
+                    )}>
                       {profile.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p className="font-semibold text-white text-sm">{profile.name}</p>
+                      <p className={cn('font-semibold text-sm', profile.is_banned ? 'text-gray-500 line-through' : 'text-white')}>
+                        {profile.name}
+                      </p>
                       <p className="text-xs text-gray-500">{new Date(profile.created_at).toLocaleDateString('es-ES')}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {resetMsg?.id === profile.id && (
-                      <span className={cn('text-xs font-semibold', resetMsg.ok ? 'text-green-400' : 'text-red-400')}>
-                        {resetMsg.text}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {(resetMsg?.id === profile.id || deleteMsg?.id === profile.id) && (
+                      <span className={cn('text-xs font-semibold', (resetMsg ?? deleteMsg)!.ok ? 'text-green-400' : 'text-red-400')}>
+                        {(resetMsg ?? deleteMsg)!.text}
                       </span>
                     )}
                     {profile.is_admin && <Badge variant="blue">Admin</Badge>}
+                    {profile.is_banned && (
+                      <Badge variant="gray" className="bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                        Baneado
+                      </Badge>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => {
                         setResetingUser(resetingUser === profile.id ? null : profile.id)
+                        setDeletingUser(null)
                         setNewPassword('')
                       }}
                     >
@@ -678,6 +737,31 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
                       onClick={() => makeAdmin(profile.id, !profile.is_admin)}
                     >
                       {profile.is_admin ? 'Quitar admin' : 'Hacer admin'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={banningUser === profile.id}
+                      onClick={() => handleBanUser(profile.id, !profile.is_banned)}
+                      className={cn(
+                        profile.is_banned
+                          ? 'border-green-600 text-green-400 hover:bg-green-500/10'
+                          : 'border-orange-600 text-orange-400 hover:bg-orange-500/10',
+                      )}
+                    >
+                      <Ban size={12} />
+                      {profile.is_banned ? 'Desbanear' : 'Banear'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-red-800 text-red-500 hover:bg-red-500/10"
+                      onClick={() => {
+                        setDeletingUser(deletingUser === profile.id ? null : profile.id)
+                        setResetingUser(null)
+                      }}
+                    >
+                      <Trash2 size={12} />
                     </Button>
                   </div>
                 </div>
@@ -705,6 +789,29 @@ export function AdminClient({ settings: initialSettings, teams, matches, profile
                       size="sm"
                       variant="outline"
                       onClick={() => { setResetingUser(null); setNewPassword('') }}
+                    >
+                      <X size={12} />
+                    </Button>
+                  </div>
+                )}
+
+                {deletingUser === profile.id && (
+                  <div className="px-4 pb-4 flex items-center gap-3 border-t border-red-900/40 pt-3 bg-red-500/5">
+                    <AlertTriangle size={14} className="text-red-400 flex-shrink-0" />
+                    <p className="text-xs text-red-300 flex-1">
+                      Eliminar a <strong>{profile.name}</strong> borrará su cuenta permanentemente. Esta acción no se puede deshacer.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => handleDeleteUser(profile.id)}
+                    >
+                      Confirmar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setDeletingUser(null)}
                     >
                       <X size={12} />
                     </Button>
