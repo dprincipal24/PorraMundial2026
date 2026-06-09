@@ -32,7 +32,7 @@ export default async function KnockoutPredictionsPage() {
   if (!isOpen || isAdmin) {
     const [{ data: allProfiles }, { data: allKnockoutPreds }] = await Promise.all([
       supabase.from('profiles').select('id, name, avatar_url').order('name'),
-      supabase.from('knockout_predictions').select('user_id, round, team_id'),
+      supabase.from('knockout_predictions').select('user_id, round, team_id').limit(10000),
     ])
 
     const predsByUser: Record<string, Record<string, string[]>> = {}

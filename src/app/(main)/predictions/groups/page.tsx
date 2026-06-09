@@ -42,8 +42,8 @@ export default async function GroupPredictionsPage({ searchParams }: { searchPar
   if (!isOpen || isAdmin) {
     const [{ data: allProfiles }, { data: allMatchPreds }, { data: allQualifyPreds }] = await Promise.all([
       supabase.from('profiles').select('id, name, avatar_url').order('name'),
-      supabase.from('match_predictions').select('user_id, match_id, home_score, away_score'),
-      supabase.from('group_qualify_predictions').select('user_id, team_id'),
+      supabase.from('match_predictions').select('user_id, match_id, home_score, away_score').limit(10000),
+      supabase.from('group_qualify_predictions').select('user_id, team_id').limit(10000),
     ])
 
     const matchPredsByUser: Record<string, Record<number, { home: number; away: number }>> = {}
