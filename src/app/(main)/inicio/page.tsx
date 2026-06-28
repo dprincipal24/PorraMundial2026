@@ -4,6 +4,11 @@ import { Star, BarChart2, Lock } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { MatchSchedule, type MatchData } from './MatchSchedule'
+import {
+  computeAllGroupResults, getBestThirds, resolveR32Teams, getKnockoutTeam,
+  type WinnerMap,
+} from '../simulador/simulatorLogic'
+import { TEAMS_BY_ID } from '@/lib/data/teams'
 
 const PHASE_CONFIG: Record<string, { label: string; emoji: string; desc: string; color: string }> = {
   registration:         { label: 'Registro abierto',               emoji: '📋', desc: 'Los participantes se están registrando',          color: 'text-blue-400' },
@@ -53,9 +58,47 @@ export default async function InicioPage() {
   const raw = (matchesRaw ?? []) as any[]
   const todayISO = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' })
 
+  // Resolve knockout match participants from group standings + bracket
+  const bracket: WinnerMap = (() => {
+    try { return JSON.parse(settingsMap['knockout_bracket'] ?? '{}') } catch { return {} }
+  })()
+
+  const scoresMap: Record<number, { home: number; away: number }> = {}
+  const matchesForGroups: { id: number; group_name: string | null; home_team_id: string | null; away_team_id: string | null }[] = []
+  for (const m of raw) {
+    matchesForGroups.push({ id: m.id, group_name: m.group_name, home_team_id: m.home_team?.id ?? null, away_team_id: m.away_team?.id ?? null })
+    if (m.phase === 'groups' && m.home_score !== null && m.away_score !== null) {
+      scoresMap[m.id] = { home: m.home_score, away: m.away_score }
+    }
+  }
+
+  const groupResults = computeAllGroupResults(matchesForGroups, scoresMap)
+  const bestThirds = getBestThirds(groupResults)
+  const r32Teams = resolveR32Teams(groupResults, bestThirds)
+
+  // Build losers map for third-place match (losers of SF 101 and 102)
+  const losers: WinnerMap = {}
+  for (const sfId of [101, 102]) {
+    const winnerId = bracket[sfId]
+    if (winnerId) {
+      const homeId = getKnockoutTeam(sfId, 'home', r32Teams, bracket)
+      const awayId = getKnockoutTeam(sfId, 'away', r32Teams, bracket)
+      const loser = homeId === winnerId ? awayId : homeId
+      if (loser) losers[sfId] = loser
+    }
+  }
+
+  function resolveKnockoutTeam(matchId: number, side: 'home' | 'away'): { name: string; iso: string } | null {
+    const teamId = getKnockoutTeam(matchId, side, r32Teams, bracket, losers)
+    if (!teamId) return null
+    const t = TEAMS_BY_ID[teamId]
+    return t ? { name: t.name, iso: t.iso } : null
+  }
+
   const matchesByDate: Record<string, MatchData[]> = {}
   for (const m of raw) {
     const key = new Date(m.match_date).toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' })
+    const isKnockout = m.phase !== 'groups'
     const match: MatchData = {
       id: m.id,
       match_date: m.match_date,
@@ -64,8 +107,12 @@ export default async function InicioPage() {
       status: m.status,
       home_score: m.home_score,
       away_score: m.away_score,
-      home_team: m.home_team ? { name: m.home_team.name, iso: m.home_team.iso ?? '' } : null,
-      away_team: m.away_team ? { name: m.away_team.name, iso: m.away_team.iso ?? '' } : null,
+      home_team: m.home_team
+        ? { name: m.home_team.name, iso: m.home_team.iso ?? '' }
+        : isKnockout ? resolveKnockoutTeam(m.id, 'home') : null,
+      away_team: m.away_team
+        ? { name: m.away_team.name, iso: m.away_team.iso ?? '' }
+        : isKnockout ? resolveKnockoutTeam(m.id, 'away') : null,
       home_placeholder: m.home_placeholder,
       away_placeholder: m.away_placeholder,
       stadium: m.stadium ? { name: m.stadium.name, city: m.stadium.city, country_flag: m.stadium.country_flag ?? '' } : null,
