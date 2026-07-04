@@ -31,6 +31,7 @@ export function ChatWidget({ userId, userName, isAdmin }: Props) {
   const namesRef = useRef<Record<string, string>>({})
   const openRef = useRef(open)
   const seenIdsRef = useRef<Set<string>>(new Set())
+  const isFirstLoadRef = useRef(true)
 
   useEffect(() => { openRef.current = open }, [open])
 
@@ -55,12 +56,21 @@ export function ChatWidget({ userId, userName, isAdmin }: Props) {
       namesRef.current = names
 
       const merged = (msgs ?? []).map(m => ({ ...m, user_name: names[m.user_id] ?? 'Anónimo' }))
-      const newCount = merged.filter(m => !seenIdsRef.current.has(m.id) && m.user_id !== userId).length
-      seenIdsRef.current = new Set(merged.map(m => m.id))
+
+      // La primera carga (montaje/recarga de página) solo establece la base de
+      // "ya visto" — no hay nada con lo que comparar todavía, así que no cuenta
+      // como no leído. Solo lo que llega DESPUÉS de esa base es "nuevo" de verdad.
+      if (isFirstLoadRef.current) {
+        seenIdsRef.current = new Set(merged.map(m => m.id))
+        isFirstLoadRef.current = false
+      } else {
+        const newCount = merged.filter(m => !seenIdsRef.current.has(m.id) && m.user_id !== userId).length
+        seenIdsRef.current = new Set(merged.map(m => m.id))
+        if (newCount > 0 && !openRef.current) setUnread(u => u + newCount)
+      }
 
       setMessages(merged)
       setLoading(false)
-      if (newCount > 0 && !openRef.current) setUnread(u => u + newCount)
     }
     load()
 
