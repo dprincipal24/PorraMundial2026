@@ -30,6 +30,7 @@ export function ChatWidget({ userId, userName, isAdmin }: Props) {
   const listRef = useRef<HTMLDivElement>(null)
   const namesRef = useRef<Record<string, string>>({})
   const openRef = useRef(open)
+  const seenIdsRef = useRef<Set<string>>(new Set())
 
   useEffect(() => { openRef.current = open }, [open])
 
@@ -52,10 +53,26 @@ export function ChatWidget({ userId, userName, isAdmin }: Props) {
       const names: Record<string, string> = {}
       for (const p of profiles ?? []) names[p.id] = p.name
       namesRef.current = names
-      setMessages((msgs ?? []).map(m => ({ ...m, user_name: names[m.user_id] ?? 'Anónimo' })))
+
+      const merged = (msgs ?? []).map(m => ({ ...m, user_name: names[m.user_id] ?? 'Anónimo' }))
+      const newCount = merged.filter(m => !seenIdsRef.current.has(m.id) && m.user_id !== userId).length
+      seenIdsRef.current = new Set(merged.map(m => m.id))
+
+      setMessages(merged)
       setLoading(false)
+      if (newCount > 0 && !openRef.current) setUnread(u => u + newCount)
     }
     load()
+
+    // Red de seguridad: si el WebSocket se queda dormido en segundo plano (móvil)
+    // o el token de sesión se refresca a mitad de conexión, esto recupera los
+    // mensajes perdidos sin que el usuario tenga que recargar la página.
+    const pollId = setInterval(load, 25000)
+    function handleVisible() {
+      if (document.visibilityState === 'visible') load()
+    }
+    document.addEventListener('visibilitychange', handleVisible)
+    window.addEventListener('focus', handleVisible)
 
     const channel = supabase
       .channel('chat_messages_live')
@@ -64,6 +81,8 @@ export function ChatWidget({ userId, userName, isAdmin }: Props) {
         { event: 'INSERT', schema: 'public', table: 'chat_messages' },
         payload => {
           const m = payload.new as { id: string; user_id: string; message: string; created_at: string }
+          if (seenIdsRef.current.has(m.id)) return
+          seenIdsRef.current.add(m.id)
           const resolvedName = namesRef.current[m.user_id] ?? (m.user_id === userId ? userName : 'Anónimo')
           setMessages(prev => [...prev, { ...m, user_name: resolvedName }])
           if (!openRef.current && m.user_id !== userId) setUnread(u => u + 1)
@@ -74,13 +93,19 @@ export function ChatWidget({ userId, userName, isAdmin }: Props) {
         { event: 'DELETE', schema: 'public', table: 'chat_messages' },
         payload => {
           const old = payload.old as { id: string }
+          seenIdsRef.current.delete(old.id)
           setMessages(prev => prev.filter(m => m.id !== old.id))
         },
       )
-      .subscribe()
+      .subscribe(status => {
+        if (status !== 'SUBSCRIBED') console.warn('[chat] realtime status:', status)
+      })
 
     return () => {
       active = false
+      clearInterval(pollId)
+      document.removeEventListener('visibilitychange', handleVisible)
+      window.removeEventListener('focus', handleVisible)
       supabase.removeChannel(channel)
     }
   }, [userId, userName])
