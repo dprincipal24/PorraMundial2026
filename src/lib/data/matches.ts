@@ -165,8 +165,8 @@ const S: MatchSeed[] = [
   { id:96,  phase:'r16', group_name:null, match_number:8, home_team_id:null, away_team_id:null, home_placeholder:'Gan. P85', away_placeholder:'Gan. P87', match_date:'2026-07-07T20:00:00Z', stadium_id:12, home_score:null, away_score:null, status:'scheduled' },
   // CUARTOS DE FINAL
   { id:97,  phase:'qf', group_name:null, match_number:1, home_team_id:null, away_team_id:null, home_placeholder:'Gan. P89', away_placeholder:'Gan. P90', match_date:'2026-07-09T20:00:00Z', stadium_id:6,  home_score:null, away_score:null, status:'scheduled' },
-  { id:98,  phase:'qf', group_name:null, match_number:2, home_team_id:null, away_team_id:null, home_placeholder:'Gan. P93', away_placeholder:'Gan. P94', match_date:'2026-07-10T19:00:00Z', stadium_id:3,  home_score:null, away_score:null, status:'scheduled' },
-  { id:99,  phase:'qf', group_name:null, match_number:3, home_team_id:null, away_team_id:null, home_placeholder:'Gan. P91', away_placeholder:'Gan. P92', match_date:'2026-07-11T21:00:00Z', stadium_id:9,  home_score:null, away_score:null, status:'scheduled' },
+  { id:98,  phase:'qf', group_name:null, match_number:2, home_team_id:null, away_team_id:null, home_placeholder:'Gan. P91', away_placeholder:'Gan. P92', match_date:'2026-07-10T19:00:00Z', stadium_id:3,  home_score:null, away_score:null, status:'scheduled' },
+  { id:99,  phase:'qf', group_name:null, match_number:3, home_team_id:null, away_team_id:null, home_placeholder:'Gan. P93', away_placeholder:'Gan. P94', match_date:'2026-07-11T21:00:00Z', stadium_id:9,  home_score:null, away_score:null, status:'scheduled' },
   { id:100, phase:'qf', group_name:null, match_number:4, home_team_id:null, away_team_id:null, home_placeholder:'Gan. P95', away_placeholder:'Gan. P96', match_date:'2026-07-12T01:00:00Z', stadium_id:5,  home_score:null, away_score:null, status:'scheduled' },
   // SEMIFINALES
   { id:101, phase:'sf', group_name:null, match_number:1, home_team_id:null, away_team_id:null, home_placeholder:'Gan. P97',  away_placeholder:'Gan. P98',  match_date:'2026-07-14T19:00:00Z', stadium_id:2,  home_score:null, away_score:null, status:'scheduled' },
