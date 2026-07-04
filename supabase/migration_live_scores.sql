@@ -3,18 +3,12 @@
 -- Ejecuta en: Supabase → SQL Editor → New query
 -- ============================================================
 
-create or replace function public.calculate_scores()
-returns table (
-  user_id              uuid,
-  name                 text,
-  avatar_url           text,
-  match_points         integer,
-  group_qualify_points integer,
-  knockout_points      integer,
-  award_points         integer,
-  total_points         integer
-)
-language sql stable security definer set search_path = public as $$
+CREATE OR REPLACE FUNCTION public.calculate_scores()
+ RETURNS TABLE(user_id uuid, name text, avatar_url text, match_points integer, group_qualify_points integer, knockout_points integer, award_points integer, total_points integer, has_paid boolean)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
   with
   match_pts as (
     select
@@ -34,7 +28,7 @@ language sql stable security definer set search_path = public as $$
       end)::integer as pts
     from match_predictions mp
     join matches m on m.id = mp.match_id
-    where m.status in ('finished', 'live')   -- incluye partidos en vivo (provisional)
+    where m.status in ('finished', 'live')
       and m.home_score is not null
       and m.away_score is not null
     group by mp.user_id
@@ -90,11 +84,13 @@ language sql stable security definer set search_path = public as $$
     coalesce(qp.pts, 0)                                                                        as group_qualify_points,
     coalesce(kp.pts, 0)                                                                        as knockout_points,
     coalesce(ap.pts, 0)                                                                        as award_points,
-    (coalesce(mp.pts, 0) + coalesce(qp.pts, 0) + coalesce(kp.pts, 0) + coalesce(ap.pts, 0))  as total_points
+    (coalesce(mp.pts, 0) + coalesce(qp.pts, 0) + coalesce(kp.pts, 0) + coalesce(ap.pts, 0))  as total_points,
+    p.has_paid
   from profiles p
   left join match_pts    mp on mp.user_id = p.id
   left join qualify_pts  qp on qp.user_id = p.id
   left join knockout_pts kp on kp.user_id = p.id
   left join award_pts    ap on ap.user_id = p.id
+  where p.is_banned is not true
   order by total_points desc;
-$$;
+$function$;

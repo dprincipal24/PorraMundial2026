@@ -33,12 +33,12 @@ create policy "Todos ven pred. eliminatorias cuando cerrado"
     )
   );
 
--- Predicciones premios: visibles cuando premios está cerrado
+-- Predicciones premios: visibles cuando grupos está cerrado (usa la misma clave que el resto)
 create policy "Todos ven pred. premios cuando cerrado"
   on public.award_predictions for select
   using (
     exists (
       select 1 from public.app_settings
-      where key = 'awards_predictions_open' and (value is null or value != 'true')
+      where key = 'group_predictions_open' and (value is null or value != 'true')
     )
   );

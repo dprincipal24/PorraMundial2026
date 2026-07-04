@@ -701,8 +701,8 @@ export function resolveR32Teams(
 
 // For each knockout match, which two matches feed it (home/away)
 export const KNOCKOUT_FEED: Record<number, { homeFrom: number; awayFrom: number }> = {
-  89:  { homeFrom: 74, awayFrom: 77 },
-  90:  { homeFrom: 73, awayFrom: 75 },
+  89:  { homeFrom: 73, awayFrom: 75 },
+  90:  { homeFrom: 74, awayFrom: 77 },
   91:  { homeFrom: 76, awayFrom: 78 },
   92:  { homeFrom: 79, awayFrom: 80 },
   93:  { homeFrom: 83, awayFrom: 84 },
