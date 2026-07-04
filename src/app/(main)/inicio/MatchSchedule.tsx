@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Building2, X, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Building2, X, Users, AlertTriangle } from 'lucide-react'
 import { TeamFlag } from '@/components/TeamFlag'
 import { cn } from '@/lib/utils'
-import { getMatchAllPredictions, type PredictionEntry } from './actions'
+import { getMatchAllPredictions, getKnockoutCrossPredictions, type PredictionEntry, type KnockoutCrossEntry } from './actions'
 
 export type MatchData = {
   id: number
@@ -14,8 +14,8 @@ export type MatchData = {
   status: string
   home_score: number | null
   away_score: number | null
-  home_team: { name: string; iso: string } | null
-  away_team: { name: string; iso: string } | null
+  home_team: { id: string; name: string; iso: string } | null
+  away_team: { id: string; name: string; iso: string } | null
   home_placeholder: string | null
   away_placeholder: string | null
   stadium: { name: string; city: string; country_flag: string } | null
@@ -44,16 +44,56 @@ function formatDateHeader(iso: string): string {
   })
 }
 
+function KnockoutPickCell({ teams }: { teams: { id: string; name: string; iso: string }[] }) {
+  if (teams.length === 0) {
+    return <span className="text-gray-700 text-xs">—</span>
+  }
+  if (teams.length === 1) {
+    const t = teams[0]
+    return (
+      <div className="flex items-center justify-end gap-1.5">
+        <span className="text-sm font-bold text-amber-400 truncate">{t.name}</span>
+        <TeamFlag iso={t.iso} name={t.name} size={20} className="w-6 h-4 flex-shrink-0" />
+      </div>
+    )
+  }
+  return (
+    <div className="flex flex-col items-end gap-0.5">
+      <div className="flex items-center gap-1 text-red-400 text-[10px] font-semibold">
+        <AlertTriangle size={11} />
+        <span>puso los dos</span>
+      </div>
+      {teams.map(t => (
+        <div key={t.id} className="flex items-center justify-end gap-1.5">
+          <span className="text-xs font-bold text-red-300 truncate">{t.name}</span>
+          <TeamFlag iso={t.iso} name={t.name} size={18} className="w-5 h-3.5 flex-shrink-0" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function PredictionsModal({ match, onClose }: { match: MatchData; onClose: () => void }) {
+  const isGroupMatch = match.phase === 'groups'
+  const needsFetch = isGroupMatch || Boolean(match.home_team && match.away_team)
   const [predictions, setPredictions] = useState<PredictionEntry[] | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [crossPicks, setCrossPicks] = useState<KnockoutCrossEntry[] | null>(null)
+  const [loading, setLoading] = useState(needsFetch)
 
   useEffect(() => {
-    getMatchAllPredictions(match.id).then(data => {
-      setPredictions(data)
-      setLoading(false)
-    })
-  }, [match.id])
+    if (!needsFetch) return
+    if (isGroupMatch) {
+      getMatchAllPredictions(match.id).then(data => {
+        setPredictions(data)
+        setLoading(false)
+      })
+    } else if (match.home_team && match.away_team) {
+      getKnockoutCrossPredictions(match.phase, match.home_team.id, match.away_team.id).then(data => {
+        setCrossPicks(data)
+        setLoading(false)
+      })
+    }
+  }, [match.id, match.phase, isGroupMatch, match.home_team, match.away_team, needsFetch])
 
   const home = match.home_team ?? { name: match.home_placeholder ?? '?', iso: '' }
   const away = match.away_team ?? { name: match.away_placeholder ?? '?', iso: '' }
@@ -71,7 +111,9 @@ function PredictionsModal({ match, onClose }: { match: MatchData; onClose: () =>
         <div className="px-4 py-3 border-b border-gray-700 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="font-bold text-white text-sm truncate">{home.name} vs {away.name}</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">Pronósticos de todos los jugadores</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">
+              {isGroupMatch ? 'Pronósticos de todos los jugadores' : '¿Quién pasa según cada jugador?'}
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -85,7 +127,41 @@ function PredictionsModal({ match, onClose }: { match: MatchData; onClose: () =>
         <div className="max-h-72 overflow-y-auto">
           {loading ? (
             <div className="py-8 text-center text-gray-500 text-sm">Cargando...</div>
-          ) : !predictions || predictions.length === 0 ? (
+          ) : isGroupMatch ? (
+            !predictions || predictions.length === 0 ? (
+              <div className="py-8 text-center text-gray-500 text-xs px-4">
+                No hay pronósticos disponibles todavía.<br />
+                Se mostrarán cuando cierre el plazo.
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-800 text-[10px] text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-2 text-left font-semibold">Jugador</th>
+                    <th className="px-4 py-2 text-right font-semibold">Pronóstico</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {predictions.map((p, i) => (
+                    <tr key={i} className="border-b border-gray-800/40 last:border-0 hover:bg-white/5">
+                      <td className="px-4 py-2 text-sm text-white">{p.user_name}</td>
+                      <td className="px-4 py-2 text-right text-sm font-black tabular-nums text-amber-400">
+                        {p.home_score}–{p.away_score}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )
+          ) : !match.home_team || !match.away_team ? (
+            <div className="py-8 text-center text-gray-500 text-xs px-4">
+              Los equipos de este cruce todavía no están definidos.
+            </div>
+          ) : crossPicks === null ? (
+            <div className="py-8 text-center text-gray-500 text-xs px-4">
+              Este partido no tiene pronósticos asociados.
+            </div>
+          ) : crossPicks.length === 0 ? (
             <div className="py-8 text-center text-gray-500 text-xs px-4">
               No hay pronósticos disponibles todavía.<br />
               Se mostrarán cuando cierre el plazo.
@@ -95,15 +171,15 @@ function PredictionsModal({ match, onClose }: { match: MatchData; onClose: () =>
               <thead>
                 <tr className="border-b border-gray-800 text-[10px] text-gray-500 uppercase tracking-wider">
                   <th className="px-4 py-2 text-left font-semibold">Jugador</th>
-                  <th className="px-4 py-2 text-right font-semibold">Pronóstico</th>
+                  <th className="px-4 py-2 text-right font-semibold">Pasa</th>
                 </tr>
               </thead>
               <tbody>
-                {predictions.map((p, i) => (
+                {crossPicks.map((p, i) => (
                   <tr key={i} className="border-b border-gray-800/40 last:border-0 hover:bg-white/5">
                     <td className="px-4 py-2 text-sm text-white">{p.user_name}</td>
-                    <td className="px-4 py-2 text-right text-sm font-black tabular-nums text-amber-400">
-                      {p.home_score}–{p.away_score}
+                    <td className="px-4 py-2 text-right">
+                      <KnockoutPickCell teams={p.teams} />
                     </td>
                   </tr>
                 ))}

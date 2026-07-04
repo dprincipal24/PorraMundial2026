@@ -88,11 +88,11 @@ export default async function InicioPage() {
     }
   }
 
-  function resolveKnockoutTeam(matchId: number, side: 'home' | 'away'): { name: string; iso: string } | null {
+  function resolveKnockoutTeam(matchId: number, side: 'home' | 'away'): { id: string; name: string; iso: string } | null {
     const teamId = getKnockoutTeam(matchId, side, r32Teams, bracket, losers)
     if (!teamId) return null
     const t = TEAMS_BY_ID[teamId]
-    return t ? { name: t.name, iso: t.iso } : null
+    return t ? { id: t.id, name: t.name, iso: t.iso } : null
   }
 
   const matchesByDate: Record<string, MatchData[]> = {}
@@ -108,10 +108,10 @@ export default async function InicioPage() {
       home_score: m.home_score,
       away_score: m.away_score,
       home_team: m.home_team
-        ? { name: m.home_team.name, iso: m.home_team.iso ?? '' }
+        ? { id: m.home_team.id, name: m.home_team.name, iso: m.home_team.iso ?? '' }
         : isKnockout ? resolveKnockoutTeam(m.id, 'home') : null,
       away_team: m.away_team
-        ? { name: m.away_team.name, iso: m.away_team.iso ?? '' }
+        ? { id: m.away_team.id, name: m.away_team.name, iso: m.away_team.iso ?? '' }
         : isKnockout ? resolveKnockoutTeam(m.id, 'away') : null,
       home_placeholder: m.home_placeholder,
       away_placeholder: m.away_placeholder,
