@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Navbar } from '@/components/Navbar'
+import { ChatWidget } from '@/components/ChatWidget'
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -22,6 +23,11 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         userAvatar={profile?.avatar_url}
       />
       <main className="flex-1">{children}</main>
+      <ChatWidget
+        userId={user.id}
+        userName={profile?.name ?? user.email ?? 'Anónimo'}
+        isAdmin={profile?.is_admin ?? false}
+      />
     </div>
   )
 }
